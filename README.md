@@ -5,7 +5,7 @@ Ansible library to configure [Foreman] and manage hosts.
 [python-foreman] is required to be installed on the system where Ansible is started from.
 
 # Examples
-The following parameters are always required so the module knows how to connect to the Foreman API v2.
+The following parameters are always required so the module knows how to connect to the [Foreman API v2].
 
 ```
 foreman_host: foreman.example.com
@@ -84,7 +84,20 @@ foreman_pass: password
 ```
 
 ## Hostgroup
-Not implemented yet. Coming soon.
+```
+- name: Ensure Hostgroup
+  foreman_hostgroup:
+    name: Hostgroup01
+    architecture: x86_64
+    domain: example.com
+    environment: production
+    medium: CoreOS mirror
+    operatingsystem: CoreOS
+    partition_table: CoreOS Partition Table
+    subnet: example.com
+    state: present
+    ...
+```
 
 ## Location
 Not implemented yet. Coming soon.
@@ -105,6 +118,8 @@ Not implemented yet. Coming soon.
 GPL
 
 # Author
-Thomas Krahn
+[Thomas Krahn]
 
 [Foreman]: www.theforeman.org
+[Foreman API v2]: www.theforeman.org/api_v2.html
+[Thomas Krahn]: mailto:ntbc@gmx.net

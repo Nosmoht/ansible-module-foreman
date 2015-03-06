@@ -1,5 +1,5 @@
 # ansible-library-foreman
-Ansible library to configure Foreman and manage hosts.
+Ansible library to configure [Foreman] and manage hosts.
 
 # Requirements
 [python-foreman] is required to be installed on the system where Ansible is started from.
@@ -106,3 +106,5 @@ GPL
 
 # Author
 Thomas Krahn
+
+[Foreman]: www.theforeman.org

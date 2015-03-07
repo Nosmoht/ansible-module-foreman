@@ -12,13 +12,18 @@ def ensure(module):
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
     foreman_pass = module.params['foreman_pass']
-    theforeman = Foreman(hostname=foreman_host, port=foreman_port, username=foreman_user, password=foreman_pass)
-    arch = theforeman.get_architecture_by_name(name=name)
+    theforeman = Foreman(hostname=foreman_host,
+                         port=foreman_port,
+                         username=foreman_user,
+                         password=foreman_pass)
+    data = {}
+    data['name'] = name
+    arch = theforeman.get_architecture(data=data)
     if not arch and state == 'present':
-        arch = theforeman.create_architecture(name=name)
+        arch = theforeman.create_architecture(data)
         changed = True
     if arch and state == 'absent':
-        theforeman.delete_architecture(name=name)
+        theforeman.delete_architecture(data=arch)
         changed = True
     return changed
 

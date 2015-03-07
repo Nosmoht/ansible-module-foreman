@@ -12,13 +12,18 @@ def ensure(module):
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
     foreman_pass = module.params['foreman_pass']
-    theforeman = Foreman(hostname=foreman_host, port=foreman_port, username=foreman_user, password=foreman_pass)
-    profile = theforeman.get_compute_profile_by_name(name=name)
+    theforeman = Foreman(hostname=foreman_host,
+                         port=foreman_port,
+                         username=foreman_user,
+                         password=foreman_pass)
+    data = {}
+    data['name'] = name
+    profile = theforeman.get_compute_profile(data=data)
     if not profile and state == 'present':
-        theforeman.create_compute_profile(name=name)
+        theforeman.create_compute_profile(data=data)
         changed = True
     if profile and state == 'absent':
-        theforeman.delete_compute_profile(name=name)
+        theforeman.delete_compute_profile(data=profile)
         changed = True
     return changed
 

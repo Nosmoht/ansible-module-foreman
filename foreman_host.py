@@ -5,7 +5,6 @@ from foreman import Foreman
 
 def ensure(module):
     changed = False
-    # Set parameters
     name = module.params['name']
     architecture = module.params['architecture']
     compute_profile = module.params['compute_profile']
@@ -16,26 +15,48 @@ def ensure(module):
     location = module.params['location']
     medium = module.params['medium']
     operatingsystem = module.params['operatingsystem']
-    organization = module.params['organization']    
+    organization = module.params['organization']
     state = module.params['state']
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
     foreman_pass = module.params['foreman_pass']
-    theforeman = Foreman(hostname=foreman_host, port=foreman_port, username=foreman_user, password=foreman_pass)
-    host = theforeman.get_host_by_name(name=name)
+    theforeman = Foreman(hostname=foreman_host,
+                         port=foreman_port,
+                         username=foreman_user,
+                         password=foreman_pass)
+    data = {}
+    data['name'] = name
+    host = theforeman.get_host(data=data)
+
     if not host:
-        host = theforeman.create_host(name=name, architecture=architecture, compute_profile=compute_profile,
-                        compute_resource=compute_resource, domain=domain, environment=environment, hostgroup=hostgroup, location=location,
-                        medium=medium, operatingsystem=operatingsystem, organization=organization)
+        if state == 'absent':
+            return False
+        data['architecture_id'] = theforeman.get_architecture(data={'name': architecture}).get('id')
+        data['compute_profile_id'] = theforeman.get_compute_profile(data={'name': compute_profile}).get('id')
+        data['compute_resource_id'] = theforeman.get_compute_resource(data={'name': compute_resource}).get('id')
+        data['domain_id'] = theforeman.get_domain(data={'name': domain}).get('id')
+        data['environment_id'] = theforeman.get_environment(data={'name': environment}).get('id')
+        data['hostgroup_id'] = theforeman.get_hostgroup(data={'name': hostgroup}).get('id')
+        data['location_id'] = theforeman.get_location(data={'name': location}).get('id')
+        data['medium_id'] = theforeman.get_medium(data={'name' :medium}).get('id')
+        data['organization_id'] = theforeman.get_organization(data={'name': organization}).get('id')
+        data['operatingsystem_id'] = theforeman.get_operatingsystem(data={'name': operatingsystem}).get('id')
+
+        host = theforeman.create_host(data=data)
         changed = True
-    host_state = theforeman.get_host_power(host_id=host.get('name')).get('power')
-    if state == 'running' and host_state != 'poweredOn':
-        theforeman.poweron_host(host_id=host.get('name'))
-        changed = True
-    if state == 'stopped' and host_state != 'poweredOff':
-        theforeman.poweroff_host(host_id=host.get('name'))
-        changed = True
+
+    if state == 'absent':
+        theforeman.delete_host(data=host)
+        return True
+
+    host_power_state = theforeman.get_host_power(host_id=host.get('id')).get('power')
+    if state == 'running' and host_power_state != 'poweredOn':
+        theforeman.poweron_host(host_id=host.get('id'))
+        return True
+    elif state == 'stopped' and host_power_state != 'poweredOff':
+        theforeman.poweroff_host(host_id=host.get('id'))
+        return True
     return changed
 
 def main():

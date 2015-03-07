@@ -4,23 +4,26 @@
 from foreman import Foreman
 
 def ensure(module):
-    changed = False
-    # Set parameters
     name = module.params['name']
     state = module.params['state']
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
     foreman_pass = module.params['foreman_pass']
-    theforeman = Foreman(hostname=foreman_host, port=foreman_port, username=foreman_user, password=foreman_pass)
-    env = theforeman.get_environment_by_name(name=name)
+    theforeman = Foreman(hostname=foreman_host,
+                         port=foreman_port,
+                         username=foreman_user,
+                         password=foreman_pass)
+    data = {}
+    data['name'] = name
+    env = theforeman.get_environment(data=data)
     if not env and state == 'present':
-        theforeman.create_environment(name=name)
-        changed = True
+        theforeman.create_environment(data=data)
+        return True
     if env and state == 'absent':
-        theforeman.delete_environment(name=name)
-        changed = True
-    return changed
+        theforeman.delete_environment(data=env)
+        return True
+    return False
 
 def main():
     module = AnsibleModule(

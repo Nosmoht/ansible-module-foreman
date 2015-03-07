@@ -4,9 +4,8 @@
 from foreman import Foreman
 
 def ensure(module):
-    changed = False
-    # Set parameters
     name = module.params['name']
+    datacenter = module.params['datacenter']
     password = module.params['password']
     provider = module.params['provider']
     server = module.params['server']
@@ -18,19 +17,30 @@ def ensure(module):
     foreman_user = module.params['foreman_user']
     foreman_pass = module.params['foreman_pass']
     theforeman = Foreman(hostname=foreman_host, port=foreman_port, username=foreman_user, password=foreman_pass)
-    resource = theforeman.get_compute_resource_by_name(name=name)
+    data = {}
+    data['name'] = name
+    resource = theforeman.get_compute_resource(data=data)
     if not resource and state == 'present':
-        theforeman.create_compute_resource(name=name, user=user, password=password, provider=provider, server=server, url=url)
-        changed = True
-    if resource and state == 'absent':
-        theforeman.delete_compute_resource(name=name)
-        changed = True
-    return changed
+        data['datacenter'] = datacenter
+        data['password'] = password
+        data['provider'] = provider
+        data['server'] = server
+        data['url'] = url
+        data['user'] = user
+        theforeman.create_compute_resource(data=data)
+        return True
+    if resource:
+        if state == 'absent':
+            theforeman.delete_compute_resource(data=resource)
+            return True
+        # TODO: Implement Update if necessary
+    return False
 
 def main():
     module = AnsibleModule(
         argument_spec=dict(
             name=dict(Type='str', required=True),
+            datacenter=dict(Type='str'),
             password=dict(Type='str'),
             provider=dict(Type='str'),
             server=dict(Type='str'),

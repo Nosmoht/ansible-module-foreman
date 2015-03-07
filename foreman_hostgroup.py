@@ -20,21 +20,35 @@ def ensure(module):
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
     foreman_pass = module.params['foreman_pass']
-    theforeman = Foreman(hostname=foreman_host, port=foreman_port, username=foreman_user, password=foreman_pass)
-    hostgroup = theforeman.get_hostgroup_by_name(name=name)
+    theforeman = Foreman(hostname=foreman_host,
+                         port=foreman_port,
+                         username=foreman_user,
+                         password=foreman_pass)
+    data = {}
+    data['name'] = name
+    hostgroup = theforeman.get_hostgroup(data=data)
+
     if not hostgroup and state == 'present':
-        theforeman.create_hostgroup(name=name,
-                                    architecture=architecture,
-                                    domain=domain,
-                                    environment=environment,
-                                    medium=medium,
-                                    operatingsystem=operatingsystem,
-                                    partition_table=partition_table,
-                                    smart_proxy=smart_proxy,
-                                    subnet=subnet)
+        if architecture:
+            data['architecture_id'] = theforeman.get_architecture(data={'name': architecture}).get('id')
+        if domain:
+            data['domain_id'] = theforeman.get_domain(data={'name': domain}).get('id')
+        if environment:
+            data['environment_id'] = theforeman.get_environment(data={'name': environment}).get('id')
+        if medium:
+            data['medium_id'] = theforeman.get_medium(data={'name':medium}).get('id')
+        if operatingsystem:
+            data['operatingsystem_id'] = theforeman.get_operatingsystem(data={'name': operatingsystem}).get('id')
+        if partition_table:
+            data['ptable_id'] = theforeman.get_partition_table(data={'name': partition_table}).get('id')
+        if smart_proxy:
+            data['puppet_proxy_id'] = theforeman.get_smart_proxy(data={'name':smart_proxy}).get('id')
+        if subnet:
+            data['subnet_id'] = theforeman.get_subnet(data={'name':subnet}).get('id')
+        theforeman.create_hostgroup(data=data)
         changed = True
     if hostgroup and state == 'absent':
-        theforeman.delete_hostgroup(name=name)
+        theforeman.delete_hostgroup(data=hostgroup)
         changed = True
     return changed
 

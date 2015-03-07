@@ -5,7 +5,7 @@ Ansible library to configure [Foreman] and manage hosts.
 [python-foreman] >= 0.6.0 is required to be installed on the system where Ansible is started from.
 
 # Examples
-The following parameters are always required so the module knows how to connect to the [Foreman API v2].
+The following parameters are always required so the module knows how to connect to the Foreman [API v2].
 
 ```
 foreman_host: foreman.example.com
@@ -111,8 +111,6 @@ Not implemented yet. Coming soon.
 ## Medium
 Not implemented yet. Coming soon.
 
-[python-foreman]: https://github.com/Nosmoht/python-foreman
-
 # License
 
 GPL
@@ -121,5 +119,6 @@ GPL
 [Thomas Krahn]
 
 [Foreman]: www.theforeman.org
-[Foreman API v2]: www.theforeman.org/api_v2.html
+[API v2]: www.theforeman.org/api_v2.html
+[python-foreman]: https://github.com/Nosmoht/python-foreman
 [Thomas Krahn]: mailto:ntbc@gmx.net

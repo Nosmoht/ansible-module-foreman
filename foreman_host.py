@@ -50,8 +50,11 @@ def ensure(module):
         theforeman.delete_host(data=host)
         return True
 
-    host_power_state = theforeman.get_host_power(host_id=host.get('id')).get('power')
-    if state == 'running' and host_power_state != 'poweredOn':
+    host_power_state = theforeman.get_host_power(host_id=host.get('name')).get('power')
+    if state == 'rebooted':
+        theforeman.reboot_host(host_id=host.get('name'))
+        return True
+    elif state == 'running' and host_power_state != 'poweredOn':
         theforeman.poweron_host(host_id=host.get('id'))
         return True
     elif state == 'stopped' and host_power_state != 'poweredOff':
@@ -73,7 +76,7 @@ def main():
             medium=dict(Type='str'),
             operatingsystem=dict(Type='str'),
             organization=dict(Type='str'),
-            state=dict(Type='str', Default='present', choices=['present', 'absent', 'running', 'stopped']),
+            state=dict(Type='str', Default='present', choices=['present', 'absent', 'running', 'stopped', 'rebooted']),
             foreman_host=dict(Type='str', Default='127.0.0.1'),
             foreman_port=dict(Type='str', Default='443'),
             foreman_user=dict(Type='str', required=True),

@@ -2,7 +2,7 @@
 Ansible library to configure [Foreman] and manage hosts.
 
 # Requirements
-[python-foreman] >= 0.6.0 is required to be installed on the system where Ansible is started from.
+[python-foreman] >= 0.6.1 is required to be installed on the system where Ansible is started from.
 
 # Examples
 The following parameters are always required so the module knows how to connect to the Foreman [API v2].
@@ -100,7 +100,13 @@ foreman_pass: password
 ```
 
 ## Location
-Not implemented yet. Coming soon.
+```
+- name: Ensure Location
+  foreman_location:
+    name: Location01
+    state: present
+    ...
+```
 
 ## Operatingsystem
 Not implemented yet. Coming soon.

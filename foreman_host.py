@@ -55,10 +55,10 @@ def ensure(module):
         theforeman.reboot_host(host_id=host.get('name'))
         return True
     elif state == 'running' and host_power_state != 'poweredOn':
-        theforeman.poweron_host(host_id=host.get('id'))
+        theforeman.poweron_host(host_id=host.get('name'))
         return True
     elif state == 'stopped' and host_power_state != 'poweredOff':
-        theforeman.poweroff_host(host_id=host.get('id'))
+        theforeman.poweroff_host(host_id=host.get('name'))
         return True
     return changed
 

@@ -121,7 +121,7 @@ Not implemented yet. Coming soon.
 ```
 - name: Esnure Smart Proxy
   foreman_smart_proxy:
-  - name: SmartProxy01
+    name: SmartProxy01
     url: http://localhost:8443
     state: present
 ```

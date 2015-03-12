@@ -108,14 +108,23 @@ foreman_pass: password
     ...
 ```
 
+## Medium
+Not implemented yet. Coming soon.
+
 ## Operatingsystem
 Not implemented yet. Coming soon.
 
 ## Organization
 Not implemented yet. Coming soon.
 
-## Medium
-Not implemented yet. Coming soon.
+## Smart Proxy
+```
+- name: Esnure Smart Proxy
+  foreman_smart_proxy:
+  - name: SmartProxy01
+    url: http://localhost:8443
+    state: present
+```
 
 # License
 

@@ -7,14 +7,14 @@ def ensure(module):
     changed = False
     # Set parameters
     name = module.params['name']
-    architecture = module.params['architecture']
-    domain = module.params['domain']
-    environment = module.params['environment']
-    medium = module.params['medium']
-    operatingsystem = module.params['operatingsystem']
-    partition_table = module.params['partition_table']
-    smart_proxy = module.params['smart_proxy']
-    subnet = module.params['subnet']
+    architecture_name = module.params['architecture']
+    domain_name = module.params['domain']
+    environment_name = module.params['environment']
+    medium_name = module.params['medium']
+    operatingsystem_name = module.params['operatingsystem']
+    partition_table_name = module.params['partition_table']
+    smart_proxy_name = module.params['smart_proxy']
+    subnet_name = module.params['subnet']
     state = module.params['state']
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
@@ -29,24 +29,64 @@ def ensure(module):
     hostgroup = theforeman.get_hostgroup(data=data)
 
     if not hostgroup and state == 'present':
-        if architecture:
-            data['architecture_id'] = theforeman.get_architecture(data={'name': architecture}).get('id')
-        if domain:
-            data['domain_id'] = theforeman.get_domain(data={'name': domain}).get('id')
-        if environment:
-            data['environment_id'] = theforeman.get_environment(data={'name': environment}).get('id')
-        if medium:
-            data['medium_id'] = theforeman.get_medium(data={'name':medium}).get('id')
-        if operatingsystem:
-            data['operatingsystem_id'] = theforeman.get_operatingsystem(data={'name': operatingsystem}).get('id')
-        if partition_table:
-            data['ptable_id'] = theforeman.get_partition_table(data={'name': partition_table}).get('id')
-        if smart_proxy:
-            data['puppet_proxy_id'] = theforeman.get_smart_proxy(data={'name':smart_proxy}).get('id')
-        if subnet:
-            data['subnet_id'] = theforeman.get_subnet(data={'name':subnet}).get('id')
+        # Architecture
+        if architecture_name:
+            architecture = theforeman.get_architecture(data={'name': architecture_name})
+            if not architecture:
+                module.fail_json(msg='Architecture not found: ' + architecture_name)
+            data['architecture_id'] = architecture.get('id')
+            
+        # Domain
+        if domain_name:
+            domain = theforeman.get_domain(data={'name': domain_name})
+            if not domain:
+                module.fail_json(msg='Domain not found: ' + domain_name)
+            data['domain_id'] = domain.get('id')
+            
+        # Environment
+        if environment_name:
+            environment = theforeman.get_environment(data={'name': environment_name})
+            if not environment:
+                module.fail_json(msg='Environment not found: ' + environment_name)
+            data['environment_id'] = environment.get('id')
+            
+        # Medium
+        if medium_name:
+            medium = theforeman.get_medium(data={'name':medium_name})
+            if not medium:
+                module.fail_json(msg='Medium not found: ' + medium_name)
+            data['medium_id'] = medium.get('id')
+            
+        # Operatingsystem
+        if operatingsystem_name:
+            operatingsystem = theforeman.get_operatingsystem(data={'name': operatingsystem_name})
+            if not operatingsystem:
+                module.fail_json(msg='Operatingsystem not found: ' + operatingsystem_name)
+            data['operatingsystem_id'] = operatingsystem.get('id')
+        
+        # Partition Table
+        if partition_table_name:
+            partition_table = theforeman.get_partition_table(data={'name': partition_table_name})
+            if not partition_table:
+                module.fail_json(msg='Partition Table not found: ' + partition_table_name)
+            data['ptable_id'] = partition_table.get('id')
+            
+        # Smart Proxy
+        if smart_proxy_name:
+            smart_proxy = theforeman.get_smart_proxy(data={'name':smart_proxy_name})
+            if not smart_proxy:
+            data['puppet_proxy_id'] = smart_proxy.get('id')
+            
+        # Subnet
+        if subnet_name:
+            subnet = theforeman.get_subnet(data={'name':subnet_name})
+            if not subnet:
+                module.fail_json(msg='Subnet not found: ' + subnet_name)
+            data['subnet_id'] = subnet.get('id')
+            
         theforeman.create_hostgroup(data=data)
         changed = True
+    
     if hostgroup and state == 'absent':
         theforeman.delete_hostgroup(data=hostgroup)
         changed = True

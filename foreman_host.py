@@ -6,17 +6,17 @@ from foreman import Foreman
 def ensure(module):
     changed = False
     name = module.params['name']
-    architecture = module.params['architecture']
+    architecture_name = module.params['architecture']
     build = module.params['build']
-    compute_profile = module.params['compute_profile']
-    compute_resource = module.params['compute_resource']
-    domain = module.params['domain']
-    environment = module.params['environment']
-    hostgroup = module.params['hostgroup']
-    location = module.params['location']
-    medium = module.params['medium']
-    operatingsystem = module.params['operatingsystem']
-    organization = module.params['organization']
+    compute_profile_name = module.params['compute_profile']
+    compute_resource_name = module.params['compute_resource']
+    domain_name = module.params['domain']
+    environment_name = module.params['environment']
+    hostgroup_name = module.params['hostgroup']
+    location_name = module.params['location']
+    medium_name = module.params['medium']
+    operatingsystem_name = module.params['operatingsystem']
+    organization_name = module.params['organization']
     root_pass = module.params['root_pass']
     state = module.params['state']
     foreman_host = module.params['foreman_host']
@@ -34,29 +34,84 @@ def ensure(module):
     if not host:
         if state == 'absent':
             return False
-        data['architecture_id'] = theforeman.get_architecture(data={'name': architecture}).get('id')
+
+        # Architecture
+        architecture = theforeman.get_architecture(data={'name': architecture_name})
+        if not architecture:
+            module.fail_json(mgs='Architecture not found: ' + architecture_name)
+        data['architecture_id'] = architecture.get('id')
+
         if build:
             data['build'] = 'true'
         else:
             data['build'] = 'false'
-        if compute_profile:
-            data['compute_profile_id'] = theforeman.get_compute_profile(data={'name': compute_profile}).get('id')
-        if compute_resource:
-            data['compute_resource_id'] = theforeman.get_compute_resource(data={'name': compute_resource}).get('id')
-        if domain:
-            data['domain_id'] = theforeman.get_domain(data={'name': domain}).get('id')
-        if environment:
-            data['environment_id'] = theforeman.get_environment(data={'name': environment}).get('id')
-        if hostgroup:
-            data['hostgroup_id'] = theforeman.get_hostgroup(data={'name': hostgroup}).get('id')
-        data['location_id'] = theforeman.get_location(data={'name': location}).get('id')
-        if medium:
-            data['medium_id'] = theforeman.get_medium(data={'name' :medium}).get('id')
-        data['organization_id'] = theforeman.get_organization(data={'name': organization}).get('id')
-        if operatingsystem:
-            data['operatingsystem_id'] = theforeman.get_operatingsystem(data={'name': operatingsystem}).get('id')
+
+        # Compute Profile
+        if compute_profile_name:
+            compute_profile = theforeman.get_compute_profile(data={'name': compute_profile_name})
+            if not compute_profile:
+                module.fail_json(msg='Copmute Profile not found: ' + compute_profile_name)
+            data['compute_profile_id'] = compute_profile.get('id')
+
+        # Compute Resource
+        if compute_resource_name:
+            compute_resource = theforeman.get_compute_resource(data={'name': compute_resource_name})
+            if not compute_resource:
+                module.fail_json(msg='Compute Resource not found: ' + compute_resource_name)
+            data['compute_resource_id'] = compute_resource.get('id')
+
+        # Domain
+        if domain_name:
+            domain = theforeman.get_domain(data={'name': domain_name})
+            if not domain:
+                module.fail_json(msg='Domain not found: ' + domain_name)
+            data['domain_id'] = domain.get('id')
+
+        # Environment
+        if environment_name:
+            environment = theforeman.get_environment(data={'name': environment_name})
+            if not environment:
+                module.fail_json(mgs='Environment not found: ' + environment_name)
+            data['environment_id'] = environment.get('id')
+
+        # Hostgroup
+        if hostgroup_name:
+            hostgroup = theforeman.get_hostgroup(data={'name': hostgroup_name})
+            if not hostgroup:
+                module.fail_json(msg='Hostgroup not found: ' + hostgroup_name)
+            data['hostgroup_id'] = hostgroup.get('id')
+
+        # Location
+        location = theforeman.get_location(data={'name': location_name})
+        if not location:
+            module.fail_json(msg='Location not found: ' + location_name)
+        data['location_id'] = location.get('id')
+
+        # Medium
+        if medium_name:
+            medium = theforeman.get_medium(data={'name' :medium_name})
+            if not medium:
+                module.fail_json(msg='Medium not found: ' + medium_name)
+            data['medium_id'] = medium.get('id')
+
+        # Organization
+        if organization_name:
+            organization = theforeman.get_organization(data={'name': organization_name})
+            if not organization:
+                module.fail_json(msg='Organization not found: ' + organization_name)
+        data['organization_id'] = organization.get('id')
+
+        # Operatingssystem
+        if operatingsystem_name:
+            operatingssystem = theforeman.get_operatingsystem(data={'name': operatingsystem_name})
+            if not operatingssystem:
+                module.fail_json(msg='Operatingsystem not found: ' + operatingsystem_name)
+            data['operatingsystem_id'] = operatingssystem.get('id')
+
+        # Root password
         if root_pass:
             data['root_pass'] = root_pass
+
         host = theforeman.create_host(data=data)
         changed = True
 

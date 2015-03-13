@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from foreman import Foreman
+from foreman.foreman import ForemanError
 
 def ensure(module):
     changed = False
@@ -26,71 +27,105 @@ def ensure(module):
                          password=foreman_pass)
     data = {}
     data['name'] = name
-    hostgroup = theforeman.get_hostgroup(data=data)
+
+    try:
+        hostgroup = theforeman.get_hostgroup(data=data)
+    except ForemanError as e:
+        module.fail_json(msg='Could not get hostgroup: ' + e.message)
 
     if not hostgroup and state == 'present':
         # Architecture
         if architecture_name:
-            architecture = theforeman.get_architecture(data={'name': architecture_name})
-            if not architecture:
-                module.fail_json(msg='Architecture not found: ' + architecture_name)
-            data['architecture_id'] = architecture.get('id')
+            try:
+                architecture = theforeman.get_architecture(data={'name': architecture_name})
+                if not architecture:
+                    module.fail_json(msg='Architecture not found: ' + architecture_name)
+                data['architecture_id'] = architecture.get('id')
+            except ForemanError as e:
+                module.fail_json(msg='Could not get architecture: ' + e.message)
 
         # Domain
         if domain_name:
-            domain = theforeman.get_domain(data={'name': domain_name})
-            if not domain:
-                module.fail_json(msg='Domain not found: ' + domain_name)
-            data['domain_id'] = domain.get('id')
+            try:
+                domain = theforeman.get_domain(data={'name': domain_name})
+                if not domain:
+                    module.fail_json(msg='Domain not found: ' + domain_name)
+                data['domain_id'] = domain.get('id')
+            except ForemanError as e:
+                module.fail_json(msg='Could not get domain: ' + e.message)
 
         # Environment
         if environment_name:
-            environment = theforeman.get_environment(data={'name': environment_name})
-            if not environment:
-                module.fail_json(msg='Environment not found: ' + environment_name)
-            data['environment_id'] = environment.get('id')
+            try:
+                environment = theforeman.get_environment(data={'name': environment_name})
+                if not environment:
+                    module.fail_json(msg='Environment not found: ' + environment_name)
+                data['environment_id'] = environment.get('id')
+            except ForemanError as e:
+                module.fail_json(msg='Could not get environment: ' + e.message)
 
         # Medium
         if medium_name:
-            medium = theforeman.get_medium(data={'name':medium_name})
-            if not medium:
-                module.fail_json(msg='Medium not found: ' + medium_name)
-            data['medium_id'] = medium.get('id')
+            try:
+                medium = theforeman.get_medium(data={'name':medium_name})
+                if not medium:
+                    module.fail_json(msg='Medium not found: ' + medium_name)
+                data['medium_id'] = medium.get('id')
+            except ForemanError as e:
+                module.fail_json(msg='Could not get medium: ' + e.message)
 
         # Operatingsystem
         if operatingsystem_name:
-            operatingsystem = theforeman.get_operatingsystem(data={'name': operatingsystem_name})
-            if not operatingsystem:
-                module.fail_json(msg='Operatingsystem not found: ' + operatingsystem_name)
-            data['operatingsystem_id'] = operatingsystem.get('id')
+            try:
+                operatingsystem = theforeman.get_operatingsystem(data={'name': operatingsystem_name})
+                if not operatingsystem:
+                    module.fail_json(msg='Operatingsystem not found: ' + operatingsystem_name)
+                data['operatingsystem_id'] = operatingsystem.get('id')
+            except ForemanError as e:
+                module.fail_json(msg='Could not get operatingsystem: ' + e.message)
 
         # Partition Table
         if partition_table_name:
-            partition_table = theforeman.get_partition_table(data={'name': partition_table_name})
-            if not partition_table:
-                module.fail_json(msg='Partition Table not found: ' + partition_table_name)
-            data['ptable_id'] = partition_table.get('id')
+            try:
+                partition_table = theforeman.get_partition_table(data={'name': partition_table_name})
+                if not partition_table:
+                    module.fail_json(msg='Partition Table not found: ' + partition_table_name)
+                data['ptable_id'] = partition_table.get('id')
+            except ForemanError as e:
+                module.fail_json(msg='Could not get partition table: ' + e.message)
 
         # Smart Proxy
         if smart_proxy_name:
-            smart_proxy = theforeman.get_smart_proxy(data={'name':smart_proxy_name})
-            if not smart_proxy:
-                module.fail_json(msg='Smart Proxy not found: ' + smart_proxy_name)
-            data['puppet_proxy_id'] = smart_proxy.get('id')
+            try:
+                smart_proxy = theforeman.get_smart_proxy(data={'name':smart_proxy_name})
+                if not smart_proxy:
+                    module.fail_json(msg='Smart Proxy not found: ' + smart_proxy_name)
+                data['puppet_proxy_id'] = smart_proxy.get('id')
+            except ForemanError as e:
+                module.fail_json(msg='Could not get smart proxy: ' + e.message)
 
         # Subnet
         if subnet_name:
-            subnet = theforeman.get_subnet(data={'name':subnet_name})
-            if not subnet:
-                module.fail_json(msg='Subnet not found: ' + subnet_name)
-            data['subnet_id'] = subnet.get('id')
+            try:
+                subnet = theforeman.get_subnet(data={'name':subnet_name})
+                if not subnet:
+                    module.fail_json(msg='Subnet not found: ' + subnet_name)
+                data['subnet_id'] = subnet.get('id')
+            except ForemanError as e:
+                module.fail_json(msg='Could not get subnet: ' + e.message)
 
-        theforeman.create_hostgroup(data=data)
-        changed = True
+        try:
+            theforeman.create_hostgroup(data=data)
+            changed = True
+        except ForemanError as e:
+            module.fail_json(msg='Could not create hostgroup: ' + e.message)
 
     if hostgroup and state == 'absent':
-        theforeman.delete_hostgroup(data=hostgroup)
-        changed = True
+        try:
+            theforeman.delete_hostgroup(data=hostgroup)
+            changed = True
+        except ForemanError as e:
+            module.fail_json(msg='Could not delete hostgroup: ' + e.message)
     return changed
 
 def main():

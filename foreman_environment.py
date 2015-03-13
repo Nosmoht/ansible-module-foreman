@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from foreman import Foreman
+from foreman.foreman import ForemanError
 
 def ensure(module):
     name = module.params['name']
@@ -16,13 +17,26 @@ def ensure(module):
                          password=foreman_pass)
     data = {}
     data['name'] = name
-    env = theforeman.get_environment(data=data)
+
+    try:
+        env = theforeman.get_environment(data=data)
+    except ForemanError as e:
+        module.fail_json(msg='Could not get environment: ' + e.message)
+
     if not env and state == 'present':
-        theforeman.create_environment(data=data)
-        return True
+        try:
+            theforeman.create_environment(data=data)
+            return True
+        except ForemanError as e:
+            module.fail_json(msg='Could not create environment: ' + e.message)
+
     if env and state == 'absent':
-        theforeman.delete_environment(data=env)
-        return True
+        try:
+            theforeman.delete_environment(data=env)
+            return True
+        except ForemanError as e:
+            module.fail_json(msg='Could not delete environment: ' + e.message)
+
     return False
 
 def main():

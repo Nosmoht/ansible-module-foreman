@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from foreman import Foreman
+from foreman.foreman import ForemanError
 
 def ensure(module):
     name = module.params['name']
@@ -17,14 +18,26 @@ def ensure(module):
                          password=foreman_pass)
     data = {}
     data['name'] = name
-    smart_proxy = theforeman.get_smart_proxy(data=data)
+
+    try:
+        smart_proxy = theforeman.get_smart_proxy(data=data)
+    except ForemanError as e:
+        module.fail_json(msg='Could not get smart proxy: ' + e.message)
+
     if not smart_proxy and state == 'present':
         data['url'] = url
-        theforeman.create_smart_proxy(data=data)
-        return True
+        try:
+            theforeman.create_smart_proxy(data=data)
+            return True
+        except ForemanError as e:
+            module.fail_json(msg='Could not create smart proxy: ' + e.message)
+
     if smart_proxy and state == 'absent':
-        theforeman.delete_smart_proxy(data=subnet)
-        return True
+        try:
+            theforeman.delete_smart_proxy(data=subnet)
+            return True
+        except:
+            module.fail_json(msg='Could not delete smart proxy: ' + e.message)
     return False
 
 def main():

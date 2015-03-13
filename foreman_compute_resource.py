@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from foreman import Foreman
+from foreman.foreman import ForemanError
 
 def ensure(module):
     name = module.params['name']
@@ -16,10 +17,20 @@ def ensure(module):
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
     foreman_pass = module.params['foreman_pass']
-    theforeman = Foreman(hostname=foreman_host, port=foreman_port, username=foreman_user, password=foreman_pass)
+
+    theforeman = Foreman(hostname=foreman_host,
+                         port=foreman_port,
+                         username=foreman_user,
+                         password=foreman_pass)
+
     data = {}
     data['name'] = name
-    resource = theforeman.get_compute_resource(data=data)
+
+    try:
+        resource = theforeman.get_compute_resource(data=data)
+    except ForemanError as e:
+        module.fail_json(msg='Could not get compute resource: ' + e.message)
+
     if not resource and state == 'present':
         data['datacenter'] = datacenter
         data['password'] = password
@@ -27,13 +38,21 @@ def ensure(module):
         data['server'] = server
         data['url'] = url
         data['user'] = user
-        theforeman.create_compute_resource(data=data)
-        return True
+
+        try:
+            theforeman.create_compute_resource(data=data)
+            return True
+        except ForemanError as e:
+            module.fail_json(msg='Could not create compute resource: ' + e.message)
+
     if resource:
         if state == 'absent':
-            theforeman.delete_compute_resource(data=resource)
-            return True
-        # TODO: Implement Update if necessary
+            try:
+                theforeman.delete_compute_resource(data=resource)
+                return True
+            except ForemanError as e:
+                module.fail_json(msg='Could not delete compute resource: ' + e.message)
+
     return False
 
 def main():

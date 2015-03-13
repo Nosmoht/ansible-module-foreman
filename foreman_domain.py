@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from foreman import Foreman
+from foreman.foreman import ForemanError
 
 def ensure(module):
     name = module.params['name']
@@ -16,13 +17,25 @@ def ensure(module):
                          password=foreman_pass)
     data = {}
     data['name'] = name
-    domain = theforeman.get_domain(data=data)
+
+    try:
+        domain = theforeman.get_domain(data=data)
+    except ForemanError as e:
+        module.fail_json(msg='Could not get domain: ' + e.message)
+
     if not domain and state == 'present':
-        theforeman.create_domain(data=data)
-        return True
+        try:
+            theforeman.create_domain(data=data)
+            return True
+        except ForemanError as e:
+            module.fail_json(msg='Could not create domain: ' + e.message)
+
     if domain and state == 'absent':
-        theforeman.delete_domain(data=domain)
-        return True
+        try:
+            theforeman.delete_domain(data=domain)
+            return True
+        except ForemanError as e:
+            module.fail_json(msg='Could not delete domain: ' + e.message)
     return False
 
 def main():

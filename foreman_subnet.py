@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from foreman import Foreman
+from foreman.foreman import ForemanError
 
 def ensure(module):
     name = module.params['name']
@@ -18,15 +19,29 @@ def ensure(module):
                          password=foreman_pass)
     data = {}
     data['name'] = name
-    subnet = theforeman.get_subnet(data=data)
+
+    try:
+        subnet = theforeman.get_subnet(data=data)
+    except ForemanError as e:
+        module.fail_json(msg='Could not get subnet: ' + e.message)
+
     if not subnet and state == 'present':
         data['network'] = network
         data['mask'] = mask
-        theforeman.create_subnet(data=data)
-        return True
+
+        try:
+            theforeman.create_subnet(data=data)
+            return True
+        except ForemanError as e:
+            module.fail_json(msg='Could not create subnet: ' + e.message)
+
     if subnet and state == 'absent':
-        theforeman.delete_subnet(data=subnet)
-        return True
+        try:
+            theforeman.delete_subnet(data=subnet)
+            return True
+        except ForemanError as e:
+            module.fail_json(msg='Could not delete subnet: ' + e.message)
+
     return False
 
 def main():

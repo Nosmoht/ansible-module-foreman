@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from foreman import Foreman
+from foreman.foreman import ForemanError
 
 def ensure(module):
     changed = False
@@ -12,19 +13,33 @@ def ensure(module):
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
     foreman_pass = module.params['foreman_pass']
+
     theforeman = Foreman(hostname=foreman_host,
                          port=foreman_port,
                          username=foreman_user,
                          password=foreman_pass)
+
     data = {}
     data['name'] = name
-    profile = theforeman.get_compute_profile(data=data)
+
+    try:
+        profile = theforeman.get_compute_profile(data=data)
+    except ForemanError as e:
+        module.fail_json(msg='Could not get compute profile: ' + e.message)
+
     if not profile and state == 'present':
-        theforeman.create_compute_profile(data=data)
-        changed = True
+        try:
+            theforeman.create_compute_profile(data=data)
+            changed = True
+        except ForemanError as e:
+            module.fail_json(msg='Could not create compute profile: ' + e.message)
+
     if profile and state == 'absent':
-        theforeman.delete_compute_profile(data=profile)
-        changed = True
+        try:
+            theforeman.delete_compute_profile(data=profile)
+            changed = True
+        except ForemanError as e:
+            module.fail_json(msg='Could not delete compute profile: ' + e.message)
     return changed
 
 def main():

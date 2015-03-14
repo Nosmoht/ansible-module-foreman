@@ -18,6 +18,22 @@ options:
     required: false
     default: present
     choices: ["present", "absent"]
+  foreman_host:
+    description: Hostname or IP address of Foreman system
+    required: false
+    default: 127.0.0.1
+  foreman_port:
+    description: Port of Foreman API
+    required: false
+    default: 443
+  foreman_user:
+    description: Username to be used to authenticate on Foreman
+    required: true
+    default: null
+  foreman_pass:
+    description: Password to be used to authenticate user on Foreman
+    required: true
+    default: null
 notes:
 - Requires the python-foreman package to be installed.
 author: Thomas Krahn
@@ -28,19 +44,17 @@ EXAMPLES = '''
   foreman_architecture:
     name: ARM
     state: present
-- name: Ensure i386 Architecture is absent
-  foreman_architecture:
-    name: i386
-    state: absent
+    foreman_user: admin
+    foreman_pass: secret
 '''
 
 try:
     from foreman import Foreman
     from foreman.foreman import ForemanError
 except ImportError:
-    foreman_found = False
+    foremanclient_found = False
 else:
-    foreman_found = True
+    foremanclient_found = True
 
 def ensure(module):
     changed = False
@@ -90,7 +104,7 @@ def main():
         ),
     )
 
-    if not foreman_found:
+    if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required')
 
     changed = ensure(module)

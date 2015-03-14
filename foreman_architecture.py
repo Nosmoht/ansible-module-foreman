@@ -34,6 +34,14 @@ EXAMPLES = '''
     state: absent
 '''
 
+try:
+    from foreman import Foreman
+    from foreman.foreman import ForemanError
+except ImportError:
+    foreman_found = False
+else:
+    foreman_found = True
+
 def ensure(module):
     changed = False
     # Set parameters
@@ -81,6 +89,9 @@ def main():
             foreman_pass=dict(Type='str', required=True)
         ),
     )
+
+    if not foreman_found:
+        module_fail_json(msg='python-foreman module is required')
 
     changed = ensure(module)
     module.exit_json(changed=changed, name=module.params['name'])

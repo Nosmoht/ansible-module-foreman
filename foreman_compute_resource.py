@@ -1,6 +1,82 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+DOCUMENTATION = '''
+---
+module: foreman_compute_resource
+short_description: Manage Foreman Compute resources using Foreman API v2
+description:
+- Create and delete Foreman Compute Resources using Foreman API v2
+options:
+  name:
+    description: Compute Resource name
+    required: true
+    default: null
+    aliases: []
+  datacenter: Name of Datacenter (only for Vmware)
+    required: false
+    default: null
+  password:
+    description: Password for Ovirt, EC2, Vmware, Openstack. Secret key for EC2
+    required: false
+    default: null
+  provider:
+    description: Providers name (e.g. Ovirt, EC2, Vmware, Openstack, EC2, Google)
+    required: false
+    default: null
+  server:
+    description: Hostname of Vmware vSphere system
+    required: false
+    default: null
+  state:
+    description: Compute Resource state
+    required: false
+    default: present
+    choices: ["present", "absent"]
+  url:
+    description: URL for Libvirt, Ovirt, and Openstack
+    required: false
+    default: null
+  user:
+    description: Username for Ovirt, EC2, Vmware, Openstack. Access Key for EC2.
+    required: false
+    default: null
+  foreman_host:
+    description: Hostname or IP address of Foreman system
+    required: false
+    default: 127.0.0.1
+  foreman_port:
+    description: Port of Foreman API
+    required: false
+    default: 443
+  foreman_user:
+    description: Username to be used to authenticate on Foreman
+    required: true
+    default: null
+  foreman_pass:
+    description: Password to be used to authenticate user on Foreman
+    required: true
+    default: null
+notes:
+- Requires the python-foreman package to be installed.
+author: Thomas Krahn
+'''
+
+EXAMPLES = '''
+- name: Ensure Vmware compute resource
+  foreman_compute_resource:
+    name: Vmware01
+    datacenter: dc01
+    provider: Vmware
+    server: vsphere.example.com
+    url: vsphere.example.com
+    user: domain\admin
+    password: secret
+    state: present
+    foreman_user: admin
+    foreman_pass: secret
+'''
+
 try:
     from foreman import Foreman
     from foreman.foreman import ForemanError

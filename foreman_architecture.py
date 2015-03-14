@@ -91,7 +91,7 @@ def main():
     )
 
     if not foreman_found:
-        module_fail_json(msg='python-foreman module is required')
+        module.fail_json(msg='python-foreman module is required')
 
     changed = ensure(module)
     module.exit_json(changed=changed, name=module.params['name'])

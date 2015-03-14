@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from foreman import Foreman
-from foreman.foreman import ForemanError
+try:
+    from foreman import Foreman
+    from foreman.foreman import ForemanError
+except ImportError:
+    foremanclient_found = False
+else:
+    foremanclient_found = True
 
 def ensure(module):
     changed = False
@@ -147,6 +152,9 @@ def main():
             foreman_pass=dict(Type='str', required=True)
         ),
     )
+
+    if not foremanclient_found:
+        module.fail_json(msg='python-foreman module is required')
 
     changed = ensure(module)
     module.exit_json(changed=changed, name=module.params['name'])

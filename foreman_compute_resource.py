@@ -99,6 +99,21 @@ def ensure(module):
     foreman_user = module.params['foreman_user']
     foreman_pass = module.params['foreman_pass']
 
+    if provider in ['Libvirt', 'Ovirt', 'Openstack'] and not url:
+        module.fail_json(msg='url must be defined for provider ' + provider)
+
+    if provider in ['Ovirt', 'EC2', 'Vmware', 'Openstack', 'EC2']:
+        if not user:
+            module.fail_json(msg='user must be defined for provider ' + provider)
+        if not password:
+            module.fail_json(msg='password must be defined for provider ' + provider)
+
+    if provide == 'Vmware':
+        if not server:
+            module.fail_json(msg='server must be defined for provider ' + provider)
+        if not datacenter:
+            module.fail_json(msg='datacenter must be defined for provider ' + provider)
+
     theforeman = Foreman(hostname=foreman_host,
                          port=foreman_port,
                          username=foreman_user,
@@ -144,7 +159,7 @@ def main():
             password=dict(Type='str'),
             provider=dict(Type='str'),
             server=dict(Type='str'),
-            url=dict(Type='str', required=True),
+            url=dict(Type='str'),
             user=dict(Type='str'),
             state=dict(Type='str', Default='present', choices=['present', 'absent']),
             foreman_host=dict(Type='str', Default='127.0.0.1'),

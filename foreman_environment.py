@@ -1,6 +1,53 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+DOCUMENTATION = '''
+---
+module: foreman_environment
+short_description: Manage Foreman Environment using Foreman API v2
+description:
+- Create and delete Foreman Environments using Foreman API v2
+options:
+  name:
+    description: Name of environment
+    required: true
+    default: null
+    aliases: []
+  state:
+    description: State of environment
+    required: false
+    default: present
+    choices: ["present", "absent"]
+  foreman_host:
+    description: Hostname or IP address of Foreman system
+    required: false
+    default: 127.0.0.1
+  foreman_port:
+    description: Port of Foreman API
+    required: false
+    default: 443
+  foreman_user:
+    description: Username to be used to authenticate on Foreman
+    required: true
+    default: null
+  foreman_pass:
+    description: Password to be used to authenticate user on Foreman
+    required: true
+    default: null
+notes:
+- Requires the python-foreman package to be installed.
+author: Thomas Krahn
+'''
+
+EXAMPLES = '''
+- name: Ensure Production environment is present
+  foreman_environment:
+    name: Production
+    state: present
+    foreman_user: admin
+    foreman_pass: secret
+'''
+
 try:
     from foreman import Foreman
     from foreman.foreman import ForemanError
@@ -8,7 +55,6 @@ except ImportError:
     foremanclient_found = False
 else:
     foremanclient_found = True
-
 
 def ensure(module):
     name = module.params['name']

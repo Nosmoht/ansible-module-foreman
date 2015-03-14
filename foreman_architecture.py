@@ -1,8 +1,38 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from foreman import Foreman
-from foreman.foreman import ForemanError
+DOCUMENTATION = '''
+---
+module: foreman_architecture
+short_description: Manage Foreman Architectures using Foreman API v2
+description:
+- Create and delete Foreman Architectures using Foreman API v2
+options:
+  name:
+    description: Name of architecture
+    required: true
+    default: null
+    aliases: []
+  state:
+    description: State of architecture
+    required: false
+    default: present
+    choices: ["present", "absent"]
+notes:
+- Requires the python-foreman package to be installed.
+author: Thomas Krahn
+'''
+
+EXAMPLES = '''
+- name: Ensure ARM Architecture is present
+  foreman_architecture:
+    name: ARM
+    state: present
+- name: Ensure i386 Architecture is absent
+  foreman_architecture:
+    name: i386
+    state: absent
+'''
 
 def ensure(module):
     changed = False

@@ -33,6 +33,8 @@ options:
     required: false
     default: present
     choices: ["present", "absent"]
+  tenant:
+    description: Tenant name for Openstack
   url:
     description: URL for Libvirt, Ovirt, and Openstack
     required: false
@@ -65,9 +67,9 @@ author: Thomas Krahn
 EXAMPLES = '''
 - name: Ensure Vmware compute resource
   foreman_compute_resource:
-    name: Vmware01
+    name: VMware
     datacenter: dc01
-    provider: Vmware
+    provider: VMware
     server: vsphere.example.com
     url: vsphere.example.com
     user: domain\admin
@@ -75,6 +77,13 @@ EXAMPLES = '''
     state: present
     foreman_user: admin
     foreman_pass: secret
+- name: Ensure Openstack compute resource
+  foreman_compute_resource:
+    name: Openstack
+    provider: OpenStack
+    tenant: ExampleTenant
+    url: https://compute01.example.com:5000/v2.0/tokens
+    user: admin
 '''
 
 try:
@@ -85,34 +94,33 @@ except ImportError:
 else:
     foremanclient_found = True
 
+def get_required_provider_params(provider):
+    provider_name = provider.lower()
+
+    if provider_name == 'ec2':
+        return ['user', 'password']
+    elif provider_name in ['libvirt', 'ovirt']:
+        return ['url', 'user', 'password']
+    elif provider_name == 'openstack':
+        return ['url', 'user', 'password', 'tenant']
+    elif provider_name == 'vmware':
+        return [ 'datacenter', 'user', 'password', 'server']
+
 def ensure(module):
     name = module.params['name']
-    datacenter = module.params['datacenter']
-    password = module.params['password']
-    provider = module.params['provider']
-    server = module.params['server']
     state = module.params['state']
-    url = module.params['url']
-    user = module.params['user']
+    provider = module.params['provider']
+
+    if provider:
+        provider_params = get_required_provider_params(provider)
+        for param in provider_params:
+            if not module.params.has_key(param):
+                module.fail_json(msg='Parameter ' + param + ' must be defined for provide ' + provider)
+
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
     foreman_pass = module.params['foreman_pass']
-
-    if provider in ['Libvirt', 'Ovirt', 'Openstack'] and not url:
-        module.fail_json(msg='url must be defined for provider ' + provider)
-
-    if provider in ['Ovirt', 'EC2', 'Vmware', 'Openstack', 'EC2']:
-        if not user:
-            module.fail_json(msg='user must be defined for provider ' + provider)
-        if not password:
-            module.fail_json(msg='password must be defined for provider ' + provider)
-
-    if provide == 'Vmware':
-        if not server:
-            module.fail_json(msg='server must be defined for provider ' + provider)
-        if not datacenter:
-            module.fail_json(msg='datacenter must be defined for provider ' + provider)
 
     theforeman = Foreman(hostname=foreman_host,
                          port=foreman_port,
@@ -128,12 +136,9 @@ def ensure(module):
         module.fail_json(msg='Could not get compute resource: ' + e.message)
 
     if not resource and state == 'present':
-        data['datacenter'] = datacenter
-        data['password'] = password
         data['provider'] = provider
-        data['server'] = server
-        data['url'] = url
-        data['user'] = user
+        for param in provider_params:
+            data[param] = module.params[param]
 
         try:
             theforeman.create_compute_resource(data=data)
@@ -162,6 +167,7 @@ def main():
             url=dict(Type='str'),
             user=dict(Type='str'),
             state=dict(Type='str', Default='present', choices=['present', 'absent']),
+            tenat=dict(Type='str'),
             foreman_host=dict(Type='str', Default='127.0.0.1'),
             foreman_port=dict(Type='str', Default='443'),
             foreman_user=dict(Type='str', required=True),

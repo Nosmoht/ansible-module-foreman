@@ -155,7 +155,7 @@ def ensure(module):
         try:
             host = theforeman.create_host(data=data)
         except ForemanError as e:
-			module.fail_json(msg='Could not create host: ' + e.message + '. Request: ' + str(e.request) + '. Status code: ' + str(e.status_code))
+            module.fail_json(msg='Could not create host: ' + e.message + '. Request: ' + str(e.request) + '. Status code: ' + str(e.status_code))
 
         changed = True
 
@@ -163,7 +163,7 @@ def ensure(module):
         try:
             theforeman.delete_host(data=host)
         except ForemanError as e:
-			module.fail_json(msg='Could not delete host: ' + e.message + '. Request: ' + str(e.request) + '. Status code: ' + str(e.status_code))
+            module.fail_json(msg='Could not delete host: ' + e.message + '. Request: ' + str(e.request) + '. Status code: ' + str(e.status_code))
         return True
 
     try:

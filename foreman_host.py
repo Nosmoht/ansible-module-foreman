@@ -19,6 +19,7 @@ def ensure(module):
     domain_name = module.params['domain']
     environment_name = module.params['environment']
     hostgroup_name = module.params['hostgroup']
+    image_name = module.params['image']
     location_name = module.params['location']
     medium_name = module.params['medium']
     operatingsystem_name = module.params['operatingsystem']
@@ -29,17 +30,19 @@ def ensure(module):
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
     foreman_pass = module.params['foreman_pass']
+
     theforeman = Foreman(hostname=foreman_host,
                          port=foreman_port,
                          username=foreman_user,
                          password=foreman_pass)
+
     data = {}
     data['name'] = name
 
     try:
         host = theforeman.get_host(data=data)
     except ForemanError as e:
-        module.fail_json(msg='Could not get host: ' + e.message)
+        module.fail_json(msg='Could not find host: ' + e.message)
 
     if not host:
         if state == 'absent':
@@ -52,7 +55,7 @@ def ensure(module):
                 module.fail_json(mgs='Architecture not found: ' + architecture_name)
             data['architecture_id'] = architecture.get('id')
         except ForemanError as e:
-            module.fail_json(msg='Could not get architecture: ' + e.message)
+            module.fail_json(msg='Could not find architecture: ' + e.message)
 
         if build:
             data['build'] = 'true'
@@ -67,7 +70,7 @@ def ensure(module):
                     module.fail_json(msg='Copmute Profile not found: ' + compute_profile_name)
                 data['compute_profile_id'] = compute_profile.get('id')
             except ForemanError as e:
-                module.fail_json(msg='Could not get compute profile: ' + e.message)
+                module.fail_json(msg='Could not find compute profile: ' + e.message)
 
         # Compute Resource
         if compute_resource_name:
@@ -77,7 +80,19 @@ def ensure(module):
                     module.fail_json(msg='Compute Resource not found: ' + compute_resource_name)
                 data['compute_resource_id'] = compute_resource.get('id')
             except ForemanError as e:
-                module.fail_json(msg='Could not get compute profile: ' + e.message)
+                module.fail_json(msg='Could not find compute profile: ' + e.message)
+
+            # Image
+            if image_name:
+                compute_resource_images = compute_resource.get('images')
+                if not compute_resource_images:
+                    module.fail_json(msg='Compute Resource %s has no images' % (compute_resource_name))
+                images = filter(lambda x: x['name'] == image_name, compute_resource_images)
+                if len(images) == 0:
+                    module.fail_json(msg='Could not find image %s in compute resource %s' % (image_name, compute_resource_name))
+                if len(images) > 1:
+                    module.fail_json(msg='Found %i images named %s in compute resource %s' % (len(images), image_name, compute_resource_images))
+                data['image_id'] = images[0].get('id')
 
         # Domain
         if domain_name:
@@ -87,7 +102,7 @@ def ensure(module):
                     module.fail_json(msg='Domain not found: ' + domain_name)
                 data['domain_id'] = domain.get('id')
             except ForemanError as e:
-                module.fail_json(msg='Could not get domain: ' + e.message)
+                module.fail_json(msg='Could not find domain: ' + e.message)
 
         # Environment
         if environment_name:
@@ -97,7 +112,7 @@ def ensure(module):
                     module.fail_json(mgs='Environment not found: ' + environment_name)
                 data['environment_id'] = environment.get('id')
             except ForemanError as e:
-                module.fail_json(msg='Could not get environment: ' + e.message)
+                module.fail_json(msg='Could not find environment: ' + e.message)
 
         # Hostgroup
         if hostgroup_name:
@@ -107,7 +122,7 @@ def ensure(module):
                     module.fail_json(msg='Hostgroup not found: ' + hostgroup_name)
                 data['hostgroup_id'] = hostgroup.get('id')
             except ForemanError as e:
-                module.fail_json(msg='Could not get hostgroup: ' + e.message)
+                module.fail_json(msg='Could not find hostgroup: ' + e.message)
 
         # Location
         try:
@@ -116,7 +131,7 @@ def ensure(module):
                 module.fail_json(msg='Location not found: ' + location_name)
             data['location_id'] = location.get('id')
         except ForemanError as e:
-            module.fail_json(msg='Could not get location: ' + e.message)
+            module.fail_json(msg='Could not find location: ' + e.message)
 
         # Medium
         if medium_name:
@@ -126,7 +141,7 @@ def ensure(module):
                     module.fail_json(msg='Medium not found: ' + medium_name)
                 data['medium_id'] = medium.get('id')
             except ForemanError as e:
-                module.fail_json(msg='Could not get medium: ' + e.message)
+                module.fail_json(msg='Could not find medium: ' + e.message)
 
         # Organization
         if organization_name:
@@ -136,7 +151,7 @@ def ensure(module):
                     module.fail_json(msg='Organization not found: ' + organization_name)
                 data['organization_id'] = organization.get('id')
             except ForemanError as e:
-                module.fail_json(msg='Could not get organization: ' + e.message)
+                module.fail_json(msg='Could not find organization: ' + e.message)
 
         # Operatingssystem
         if operatingsystem_name:
@@ -146,7 +161,7 @@ def ensure(module):
                     module.fail_json(msg='Operatingsystem not found: ' + operatingsystem_name)
                 data['operatingsystem_id'] = operatingssystem.get('id')
             except ForemanError as e:
-                module.fail_json(msg='Could not get operatingsystem: ' + e.message)
+                module.fail_json(msg='Could not find operatingsystem: ' + e.message)
 
         # Root password
         if root_pass:
@@ -155,7 +170,7 @@ def ensure(module):
         try:
             host = theforeman.create_host(data=data)
         except ForemanError as e:
-            module.fail_json(msg='Could not create host: ' + e.get('request').get('error').get('message'))
+            module.fail_json(msg='Could not create host: ' + e.message)
 
         changed = True
 
@@ -163,7 +178,7 @@ def ensure(module):
         try:
             theforeman.delete_host(data=host)
         except ForemanError as e:
-            module.fail_json(msg='Could not delete host: ' + e.get('request').get('error').get('message'))
+            module.fail_json(msg='Could not delete host: ' + e.message)
         return True
 
     try:
@@ -203,6 +218,7 @@ def main():
             domain=dict(Type='str'),
             environment=dict(Type='str'),
             hostgroup=dict(Type='str'),
+            image=dict(Type='str'),
             location=dict(Type='str', required=True),
             medium=dict(Type='str'),
             operatingsystem=dict(Type='str'),

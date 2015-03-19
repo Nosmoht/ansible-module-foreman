@@ -37,7 +37,11 @@ def ensure(module):
                          password=foreman_pass)
 
     data = {}
-    data['name'] = name
+
+    if domain_name in name:
+        data['name'] = name
+    else:
+        data['name'] = name + '.' + domain_name
 
     try:
         host = theforeman.get_host(data=data)

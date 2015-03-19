@@ -177,9 +177,9 @@ def ensure(module):
     if state == 'absent':
         try:
             theforeman.delete_host(data=host)
+            return True
         except ForemanError as e:
             module.fail_json(msg='Could not delete host: ' + e.message)
-        return True
 
     try:
         host_power_state = theforeman.get_host_power(host_id=host.get('name')).get('power')

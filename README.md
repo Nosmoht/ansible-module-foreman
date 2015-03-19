@@ -65,6 +65,7 @@ foreman_pass: password
     state: present
 ```
 ## Host
+### Provision by Medium
 ```
 - name: Ensure Host
   foreman_host:
@@ -82,7 +83,24 @@ foreman_pass: password
     medium: CoreOS Medium
     ...
 ```
-
+### Provision by Image
+```
+- name: Ensure Host
+  foreman_host:
+    name: ansible-host-01.example.com
+    state: running
+    architecture: x86_64
+    compute_profile: 1-Small
+    compute_resource: VMwareCluster01
+    domain: example.com
+    environment: Production
+    hostgroup: Hostgroup01
+    image: CoreOS Image
+    location: Somewhere
+    operatingsystem: CoreOS
+    organization: Example Org.
+...
+```
 ## Hostgroup
 ```
 - name: Ensure Hostgroup

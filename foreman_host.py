@@ -61,10 +61,7 @@ def ensure(module):
         except ForemanError as e:
             module.fail_json(msg='Could not find architecture: ' + e.message)
 
-        if build:
-            data['build'] = 'true'
-        else:
-            data['build'] = 'false'
+        data['build'] = str(build)
 
         # Compute Profile
         if compute_profile_name:

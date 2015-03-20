@@ -90,35 +90,29 @@ def ensure(module):
             return False
 
         # Architecture
-        try:
-            architecture = theforeman.get_architecture(data={'name': architecture_name})
-            if not architecture:
-                module.fail_json(mgs='Architecture not found: ' + architecture_name)
-            data['architecture_id'] = architecture.get('id')
-        except ForemanError as e:
-            module.fail_json(msg='Could not find architecture: ' + e.message)
-
-        data['build'] = str(build)
+        if architecture_name:
+            architecture = get_resource(module=module,
+                                        resource_type='architecture',
+                                        resource_func=theforeman.get_architecture,
+                                        resource_name=architecture_name)
+        data['architecture_id'] = architecture.get('id')
+        data['build'] = build
 
         # Compute Profile
         if compute_profile_name:
-            try:
-                compute_profile = theforeman.get_compute_profile(data={'name': compute_profile_name})
-                if not compute_profile:
-                    module.fail_json(msg='Copmute Profile not found: ' + compute_profile_name)
-                data['compute_profile_id'] = compute_profile.get('id')
-            except ForemanError as e:
-                module.fail_json(msg='Could not find compute profile: ' + e.message)
+            compute_profile = get_resource(module=module,
+                                           resource_type='compute profile',
+                                           resource_func=theforeman.get_compute_profile,
+                                           resource_name=compute_profile_name)
+            data['compute_profile_id'] = compute_profile.get('id')
 
         # Compute Resource
         if compute_resource_name:
-            try:
-                compute_resource = theforeman.get_compute_resource(data={'name': compute_resource_name})
-                if not compute_resource:
-                    module.fail_json(msg='Compute Resource not found: ' + compute_resource_name)
-                data['compute_resource_id'] = compute_resource.get('id')
-            except ForemanError as e:
-                module.fail_json(msg='Could not find compute profile: ' + e.message)
+            compute_resource = get_resource(module=module,
+                                           resource_type='compute resource',
+                                           resource_func=theforeman.get_compute_resource,
+                                           resource_name=compute_resource_name)
+            data['compute_resource_id'] = compute_resource.get('id')
 
             # Image
             if image_name:
@@ -134,72 +128,59 @@ def ensure(module):
 
         # Domain
         if domain_name:
-            try:
-                domain = theforeman.get_domain(data={'name': domain_name})
-                if not domain:
-                    module.fail_json(msg='Domain not found: ' + domain_name)
-                data['domain_id'] = domain.get('id')
-            except ForemanError as e:
-                module.fail_json(msg='Could not find domain: ' + e.message)
+            domain = get_resource(module=module,
+                                  resource_type='domain',
+                                  resource_func=theforeman.get_domain,
+                                  resource_name=domain_name)
+            data['domain_id'] = domain.get('id')
 
         # Environment
         if environment_name:
-            try:
-                environment = theforeman.get_environment(data={'name': environment_name})
-                if not environment:
-                    module.fail_json(mgs='Environment not found: ' + environment_name)
-                data['environment_id'] = environment.get('id')
-            except ForemanError as e:
-                module.fail_json(msg='Could not find environment: ' + e.message)
+            environment = get_resource(module=module,
+                                       resource_type='environment',
+                                       resource_func=theforeman.get_environment,
+                                       resource_name=environment_name)
+            data['environment_id'] = environment.get('id')
 
         # Hostgroup
         if hostgroup_name:
-            try:
-                hostgroup = theforeman.get_hostgroup(data={'name': hostgroup_name})
-                if not hostgroup:
-                    module.fail_json(msg='Hostgroup not found: ' + hostgroup_name)
-                data['hostgroup_id'] = hostgroup.get('id')
-            except ForemanError as e:
-                module.fail_json(msg='Could not find hostgroup: ' + e.message)
+            hostgroup = get_resource(module=module,
+                                     resource_type='hostgroup',
+                                     resource_func=theforeman.get_hostgroup,
+                                     resource_name=hostgroup_name)
+            data['hostgroup_id'] = hostgroup.get('id')
 
         # Location
-        try:
-            location = theforeman.get_location(data={'name': location_name})
-            if not location:
-                module.fail_json(msg='Location not found: ' + location_name)
+        if location_name:
+            location = get_resource(module=module,
+                                    resource_type='location',
+                                    resource_func=theforeman.get_location,
+                                    resource_name=location_name)
             data['location_id'] = location.get('id')
-        except ForemanError as e:
-            module.fail_json(msg='Could not find location: ' + e.message)
 
         # Medium
         if medium_name:
-            try:
-                medium = theforeman.get_medium(data={'name' :medium_name})
-                if not medium:
-                    module.fail_json(msg='Medium not found: ' + medium_name)
-                data['medium_id'] = medium.get('id')
-            except ForemanError as e:
-                module.fail_json(msg='Could not find medium: ' + e.message)
+            medium = get_resource(module=module,
+                                  resource_type='medium',
+                                  resource_func=theforeman.get_medium,
+                                  resource_name=medium_name)
+            data['medium_id'] = medium.get('id')
 
         # Organization
         if organization_name:
-            try:
-                organization = theforeman.get_organization(data={'name': organization_name})
-                if not organization:
-                    module.fail_json(msg='Organization not found: ' + organization_name)
-                data['organization_id'] = organization.get('id')
-            except ForemanError as e:
-                module.fail_json(msg='Could not find organization: ' + e.message)
+            organization = get_resource(module=module,
+                                        resource_type='organization',
+                                        resource_func=theforeman.get_organization,
+                                        resource_name=organization_name)
+            data['organization_id'] = organization.get('id')
 
         # Operatingssystem
         if operatingsystem_name:
-            try:
-                operatingssystem = theforeman.get_operatingsystem(data={'name': operatingsystem_name})
-                if not operatingssystem:
-                    module.fail_json(msg='Operatingsystem not found: ' + operatingsystem_name)
-                data['operatingsystem_id'] = operatingssystem.get('id')
-            except ForemanError as e:
-                module.fail_json(msg='Could not find operatingsystem: ' + e.message)
+            operatingsystem = get_resource(module=module,
+                                           resource_type='operatingsystem',
+                                           resource_func=theforeman.get_operatingsystem,
+                                           resource_name=operatingsystem_name)
+            data['operatingsystem_id'] = operatingsystem.get('id')
 
         # Root password
         if root_pass:

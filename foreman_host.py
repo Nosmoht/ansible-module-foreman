@@ -233,7 +233,7 @@ def main():
         argument_spec=dict(
             name                = dict(Type='str', required=True),
             architecture        = dict(Type='str', default='x86_64'),
-            build               = dict(type='bool', default=True),
+            build               = dict(type='bool', default=False),
             compute_profile     = dict(Type='str', required=False),
             compute_resource    = dict(Type='str', required=False),
             domain              = dict(Type='str', required=False),

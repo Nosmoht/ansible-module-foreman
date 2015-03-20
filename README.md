@@ -2,7 +2,7 @@
 Ansible library to configure [Foreman] and manage hosts.
 
 # Requirements
-[python-foreman] >= 0.7.0 is required to be installed on the system where Ansible is started from.
+[python-foreman] >= 0.10.3 is required to be installed on the system where Ansible is started from.
 
 # Examples
 The following parameters are always required so the module knows how to connect to the Foreman [API v2].
@@ -47,6 +47,52 @@ foreman_pass: password
     user: ansible
     password: secret
     server: vsphere.example.com
+    ...
+```
+
+## Compute Attribute
+```
+- name: Ensure Compute Attribute
+  foreman_compute_attribute:
+    compute_profile: 1-Small
+    compute_resource: VMwareCluster1
+    vm_attributes:
+      cluster: Cluster1
+      corespersocket: 1
+      cpus: 1
+      guest_id: otherGuest64
+      hardware_version: vmx-10
+      interfaces_attributes:
+      '0':
+        _delete: ''
+        network: network-40
+        type: VirtualVmxnet3
+      '1':
+        _delete: ''
+        network: network-40
+        type: VirtualVmxnet3
+      new_interfaces:
+        _delete: ''
+        network: network-40
+        type: VirtualVmxnet3
+        memory_mb: 1024
+      path: /Datacenters/DC01/vm/example
+      scsi_controller_type: ParaVirtualSCSIController
+      volumes_attributes:
+        '0':
+          _delete: ''
+          datastore: DS01
+          eager_zero: true
+          name: Hard disk
+          size_gb: 16
+          thin: true
+        new_volumes:
+          _delete: ''
+          datastore: DS01
+          eager_zero: true
+          name: Hard disk
+          size_gb: 16
+          thin: true
     ...
 ```
 ## Domain

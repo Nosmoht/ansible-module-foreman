@@ -229,31 +229,31 @@ def ensure(module):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            name=dict(Type='str', required=True),
-            architecture=dict(Type='str', default='x86_64'),
-            build=dict(type='bool', default=True, choices=BOOLEANS),
-            compute_profile=dict(Type='str', required=False),
-            compute_resource=dict(Type='str', required=False),
-            domain=dict(Type='str', required=False),
-            environment=dict(Type='str', required=False),
-            hostgroup=dict(Type='str', required=False),
-            image=dict(Type='str',required=False),
-            location=dict(Type='str', required=False),
-            medium=dict(Type='str', required=False),
-            operatingsystem=dict(Type='str', required=False),
-            organization=dict(Type='str', required=False),
-            root_pass=dict(Type='str', required=False),
-            state=dict(Type='str', default='present',
-                       choices=['present', 'absent', 'running', 'stopped', 'rebooted']),
-            foreman_host=dict(Type='str', default='127.0.0.1'),
-            foreman_port=dict(Type='str', default='443'),
-            foreman_user=dict(Type='str', required=True),
-            foreman_pass=dict(Type='str', required=True)
+            name                = dict(Type='str', required=True),
+            architecture        = dict(Type='str', default='x86_64'),
+            build               = dict(type='bool', default=True),
+            compute_profile     = dict(Type='str', required=False),
+            compute_resource    = dict(Type='str', required=False),
+            domain              = dict(Type='str', required=False),
+            environment         = dict(Type='str', required=False),
+            hostgroup           = dict(Type='str', required=False),
+            image               = dict(Type='str',required=False),
+            location            = dict(Type='str', required=False),
+            medium              = dict(Type='str', required=False),
+            operatingsystem     = dict(Type='str', required=False),
+            organization        = dict(Type='str', required=False),
+            root_pass           = dict(Type='str', required=False),
+            state               = dict(Type='str', default='present',
+                                       choices=['present', 'absent', 'running', 'stopped', 'rebooted']),
+            foreman_host        = dict(Type='str', default='127.0.0.1'),
+            foreman_port        = dict(Type='str', default='443'),
+            foreman_user        = dict(Type='str', required=True),
+            foreman_pass        = dict(Type='str', required=True)
         ),
     )
 
     if not foremanclient_found:
-        module.fail_json(msg='python-foreman module is required')
+        module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
     changed = ensure(module)
     module.exit_json(changed=changed, name=module.params['name'])

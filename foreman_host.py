@@ -75,7 +75,7 @@ def ensure(module):
 
     data = {}
 
-    if domain_name in name:
+    if domain_name and domain_name in name:
         data['name'] = name
     else:
         data['name'] = name + '.' + domain_name

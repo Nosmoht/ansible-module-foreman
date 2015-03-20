@@ -37,6 +37,15 @@ except ImportError:
 else:
     foremanclient_found = True
 
+def get_resource(module, resource_type, resource_func, resource_name):
+    try:
+        result = resource_func(data={'name': resource_name})
+        if not result:
+            module.fail_json(mgs="%s %s not found" % (resource_type, resource_name))
+    except ForemanError as e:
+        module.fail_json(msg="Error while getting %s: %s" % (resource_type, e.message))
+    return result
+
 def ensure(module):
     changed = False
     name = module.params['name']

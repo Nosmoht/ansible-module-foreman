@@ -75,6 +75,8 @@ def ensure(module):
     medium_name = module.params['medium']
     operatingsystem_name = module.params['operatingsystem']
     organization_name = module.params['organization']
+    parameters = module.params['parameters']
+    provision_method = module.params['provision_method']
     root_pass = module.params['root_pass']
     state = module.params['state']
     subnet_name = module.params['subnet']
@@ -206,6 +208,10 @@ def ensure(module):
                                            resource_name=operatingsystem_name)
             data['operatingsystem_id'] = operatingsystem.get('id')
 
+        # Provision Method
+        if provision_method:
+            data['provision_method'] = provision_method
+
         # Root password
         if root_pass:
             data['root_pass'] = root_pass
@@ -231,6 +237,25 @@ def ensure(module):
             return True
         except ForemanError as e:
             module.fail_json(msg='Could not delete host: ' + e.message)
+
+    # Parameters
+    if parameters:
+        host_parameters = theforeman.get_host_parameters(host_id=host.get('id'))
+
+        for param in parameters:
+            host_params = [item for item in host_parameters if item.get('name') == param.get('name')]
+            if not host_params:
+                try:
+                    theforeman.create_host_parameter(host_id=host.get('id'), data=param)
+                except ForemanError as e:
+                    module.fail_json(msg='Could not create paramater %s: %s' % (param.get('name'), e.message))
+                changed = True
+            elif host_params[0]['value'] != param.get('value'):
+                try:
+                    theforeman.update_host_parameter(host_id=host.get('id'), data=param)
+                except ForemanError as e:
+                    module.fail_json(msg='Could not update parameter %s: %s' % (param.get('name'), e.message))
+                changed = True
 
     try:
         host_power_state = theforeman.get_host_power(host_id=host.get('name')).get('power')
@@ -261,29 +286,31 @@ def ensure(module):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            name                = dict(Type='str', required=True),
-            architecture        = dict(Type='str', default='x86_64'),
-            build               = dict(type='bool', default=False),
-            compute_profile     = dict(Type='str', required=False),
-            compute_resource    = dict(Type='str', required=False),
-            domain              = dict(Type='str', required=False),
-            enabled             = dict(Type='str', required=False),
-            environment         = dict(Type='str', required=False),
-            hostgroup           = dict(Type='str', required=False),
-            image               = dict(Type='str',required=False),
-            location            = dict(Type='str', required=False),
-            managed             = dict(Type='str', required=False),
-            medium              = dict(Type='str', required=False),
-            operatingsystem     = dict(Type='str', required=False),
-            organization        = dict(Type='str', required=False),
-            root_pass           = dict(Type='str', required=False),
-            state               = dict(Type='str', default='present',
+            name=dict(Type='str', required=True),
+            architecture=dict(Type='str', default='x86_64'),
+            build=dict(type='bool', default=False),
+            compute_profile=dict(Type='str', required=False),
+            compute_resource=dict(Type='str', required=False),
+            domain=dict(Type='str', required=False),
+            enabled=dict(Type='str', required=False),
+            environment=dict(Type='str', required=False),
+            hostgroup=dict(Type='str', required=False),
+            image=dict(Type='str', required=False),
+            location=dict(Type='str', required=False),
+            managed=dict(Type='str', required=False),
+            medium=dict(Type='str', required=False),
+            operatingsystem=dict(Type='str', required=False),
+            organization=dict(Type='str', required=False),
+            parameters=dict(Type='str', required=False),
+            provision_method=dict(Type='str', required=False, choices=['build', 'image']),
+            root_pass=dict(Type='str', required=False),
+            state=dict(Type='str', default='present',
                                        choices=['present', 'absent', 'running', 'stopped', 'rebooted']),
-            subnet              = dict(Type='str', required=False),
-            foreman_host        = dict(Type='str', default='127.0.0.1'),
-            foreman_port        = dict(Type='str', default='443'),
-            foreman_user        = dict(Type='str', required=True),
-            foreman_pass        = dict(Type='str', required=True)
+            subnet=dict(Type='str', required=False),
+            foreman_host=dict(Type='str', default='127.0.0.1'),
+            foreman_port=dict(Type='str', default='443'),
+            foreman_user=dict(Type='str', required=True),
+            foreman_pass=dict(Type='str', required=True)
         ),
     )
 

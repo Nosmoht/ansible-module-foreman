@@ -42,9 +42,7 @@ author: Thomas Krahn
 '''
 
 try:
-    from foreman import Foreman
-    from foreman.foreman import ForemanError
-    from foreman.constants import *
+    from foreman.foreman import *
 except ImportError:
     foremanclient_found = False
 else:

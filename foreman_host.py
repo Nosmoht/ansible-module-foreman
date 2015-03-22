@@ -54,6 +54,7 @@ def ensure(module):
     compute_profile_name = module.params['compute_profile']
     compute_resource_name = module.params['compute_resource']
     domain_name = module.params['domain']
+    enabled = module.params['enabled']
     environment_name = module.params['environment']
     hostgroup_name = module.params['hostgroup']
     image_name = module.params['image']
@@ -134,6 +135,9 @@ def ensure(module):
                                   resource_func=theforeman.get_domain,
                                   resource_name=domain_name)
             data['domain_id'] = domain.get('id')
+
+        if enabled:
+            data['enabled'] = enabled
 
         # Environment
         if environment_name:
@@ -237,6 +241,7 @@ def main():
             compute_profile     = dict(Type='str', required=False),
             compute_resource    = dict(Type='str', required=False),
             domain              = dict(Type='str', required=False),
+            enabled             = dict(Type='str', required=False),
             environment         = dict(Type='str', required=False),
             hostgroup           = dict(Type='str', required=False),
             image               = dict(Type='str',required=False),

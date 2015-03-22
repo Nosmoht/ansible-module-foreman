@@ -26,7 +26,7 @@ def ensure(module):
     data['name'] = name
 
     try:
-        subnet = theforeman.get_subnet(data=data)
+        subnet = theforeman.search_subnet(data=data)
     except ForemanError as e:
         module.fail_json(msg='Could not get subnet: ' + e.message)
 

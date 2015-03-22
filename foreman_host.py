@@ -143,7 +143,6 @@ def ensure(module):
                 if len(images) > 1:
                     module.fail_json(msg='Found %i images named %s in compute resource %s' % (len(images), image_name, compute_resource_images))
                 data['image_id'] = images[0].get('id')
-                data['provision_method'] = 'image'
 
         # Domain
         if domain_name:
@@ -191,7 +190,6 @@ def ensure(module):
                                   resource_func=theforeman.get_medium,
                                   resource_name=medium_name)
             data['medium_id'] = medium.get('id')
-            data['provision_method'] = 'build'
 
         # Organization
         if organization_name:

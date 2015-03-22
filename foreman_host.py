@@ -152,6 +152,7 @@ def ensure(module):
                                   resource_name=domain_name)
             data['domain_id'] = domain.get('id')
 
+        # Enabled
         if enabled:
             data['enabled'] = enabled
 

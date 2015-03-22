@@ -8,6 +8,18 @@ short_description: Create and delete hosts with Foreman using Foreman API v2
 description:
 - Create and delete hosts using Foreman API v2
 options:
+  enabled:
+    description: Host enabled
+    required: false
+    choices: BOOLEANS
+  managed:
+    description: Should Foreman manage the host
+    required: false
+    default: null
+  subnet:
+    description: Name of subnet to use for this host
+    required: false
+    default: null
   foreman_host:
     description: Hostname or IP address of Foreman system
     required: false

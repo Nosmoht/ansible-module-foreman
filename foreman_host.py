@@ -65,6 +65,7 @@ def ensure(module):
     organization_name = module.params['organization']
     root_pass = module.params['root_pass']
     state = module.params['state']
+    subnet_name = module.params['subnet']
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
@@ -197,6 +198,14 @@ def ensure(module):
         if root_pass:
             data['root_pass'] = root_pass
 
+        # Subnet
+        if subnet_name:
+            subnet = get_resource(module=module,
+                                  resource_type='subnets',
+                                  resource_func=theforeman.get_subnet,
+                                  resource_name=subnet_name)
+            data['subnet_id'] = subnet.get('id')
+
         try:
             host = theforeman.create_host(data=data)
         except ForemanError as e:
@@ -258,6 +267,7 @@ def main():
             root_pass           = dict(Type='str', required=False),
             state               = dict(Type='str', default='present',
                                        choices=['present', 'absent', 'running', 'stopped', 'rebooted']),
+            subnet              = dict(Type='str', required=False),
             foreman_host        = dict(Type='str', default='127.0.0.1'),
             foreman_port        = dict(Type='str', default='443'),
             foreman_user        = dict(Type='str', required=True),

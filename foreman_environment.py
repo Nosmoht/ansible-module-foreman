@@ -71,7 +71,7 @@ def ensure(module):
     data['name'] = name
 
     try:
-        env = theforeman.get_environment(data=data)
+        env = theforeman.search_environment(data=data)
     except ForemanError as e:
         module.fail_json(msg='Could not get environment: ' + e.message)
 
@@ -84,7 +84,7 @@ def ensure(module):
 
     if env and state == 'absent':
         try:
-            theforeman.delete_environment(data=env)
+            theforeman.delete_environment(id=env.get('id'))
             return True
         except ForemanError as e:
             module.fail_json(msg='Could not delete environment: ' + e.message)

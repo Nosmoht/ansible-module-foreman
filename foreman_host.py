@@ -44,6 +44,7 @@ author: Thomas Krahn
 try:
     from foreman import Foreman
     from foreman.foreman import ForemanError
+    from foreman.constants import *
 except ImportError:
     foremanclient_found = False
 else:
@@ -61,25 +62,25 @@ def get_resource(module, resource_type, resource_func, resource_name):
 def ensure(module):
     changed = False
     name = module.params['name']
-    architecture_name = module.params['architecture']
+    architecture_name = module.params[ARCHITECTURE]
     build = module.params['build']
-    compute_profile_name = module.params['compute_profile']
-    compute_resource_name = module.params['compute_resource']
-    domain_name = module.params['domain']
+    compute_profile_name = module.params[COMPUTE_PROFILE]
+    compute_resource_name = module.params[COMPUTE_RESOURCE]
+    domain_name = module.params[DOMAIN]
     enabled = module.params['enabled']
-    environment_name = module.params['environment']
-    hostgroup_name = module.params['hostgroup']
+    environment_name = module.params[ENVIRONMENT]
+    hostgroup_name = module.params[HOSTGROUP]
     image_name = module.params['image']
-    location_name = module.params['location']
+    location_name = module.params[LOCATION]
     managed = module.params['managed']
-    medium_name = module.params['medium']
-    operatingsystem_name = module.params['operatingsystem']
-    organization_name = module.params['organization']
+    medium_name = module.params[MEDIUM]
+    operatingsystem_name = module.params[OPERATINGSYSTEM]
+    organization_name = module.params[ORGANIZATION]
     parameters = module.params['parameters']
     provision_method = module.params['provision_method']
     root_pass = module.params['root_pass']
     state = module.params['state']
-    subnet_name = module.params['subnet']
+    subnet_name = module.params[SUBNET]
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
@@ -98,7 +99,7 @@ def ensure(module):
         host_name = name + '.' + domain_name
 
     try:
-        host = theforeman.get_host(data={'name': host_name})
+        host = theforeman.search_host(data={'name': host_name})
     except ForemanError as e:
         module.fail_json(msg='Could not find host %s: %s' % (host_name, e.message))
 
@@ -110,8 +111,8 @@ def ensure(module):
         # Architecture
         if architecture_name:
             architecture = get_resource(module=module,
-                                        resource_type='architecture',
-                                        resource_func=theforeman.get_architecture,
+                                        resource_type=ARCHITECTURE,
+                                        resource_func=theforeman.search_architecture,
                                         resource_name=architecture_name)
         data['architecture_id'] = architecture.get('id')
         data['build'] = build
@@ -119,16 +120,16 @@ def ensure(module):
         # Compute Profile
         if compute_profile_name:
             compute_profile = get_resource(module=module,
-                                           resource_type='compute profile',
-                                           resource_func=theforeman.get_compute_profile,
+                                           resource_type=COMPUTE_PROFILE,
+                                           resource_func=theforeman.search_compute_profile,
                                            resource_name=compute_profile_name)
             data['compute_profile_id'] = compute_profile.get('id')
 
         # Compute Resource
         if compute_resource_name:
             compute_resource = get_resource(module=module,
-                                           resource_type='compute resource',
-                                           resource_func=theforeman.get_compute_resource,
+                                           resource_type=COMPUTE_RESOURCE,
+                                           resource_func=theforeman.search_compute_resource,
                                            resource_name=compute_resource_name)
             data['compute_resource_id'] = compute_resource.get('id')
 
@@ -147,8 +148,8 @@ def ensure(module):
         # Domain
         if domain_name:
             domain = get_resource(module=module,
-                                  resource_type='domain',
-                                  resource_func=theforeman.get_domain,
+                                  resource_type=DOMAIN,
+                                  resource_func=theforeman.search_domain,
                                   resource_name=domain_name)
             data['domain_id'] = domain.get('id')
 
@@ -159,24 +160,24 @@ def ensure(module):
         # Environment
         if environment_name:
             environment = get_resource(module=module,
-                                       resource_type='environment',
-                                       resource_func=theforeman.get_environment,
+                                       resource_type=ENVIRONMENT,
+                                       resource_func=theforeman.search_environment,
                                        resource_name=environment_name)
             data['environment_id'] = environment.get('id')
 
         # Hostgroup
         if hostgroup_name:
             hostgroup = get_resource(module=module,
-                                     resource_type='hostgroup',
-                                     resource_func=theforeman.get_hostgroup,
+                                     resource_type=HOSTGROUP,
+                                     resource_func=theforeman.search_hostgroup,
                                      resource_name=hostgroup_name)
             data['hostgroup_id'] = hostgroup.get('id')
 
         # Location
         if location_name:
             location = get_resource(module=module,
-                                    resource_type='location',
-                                    resource_func=theforeman.get_location,
+                                    resource_type=LOCATION,
+                                    resource_func=theforeman.search_location,
                                     resource_name=location_name)
             data['location_id'] = location.get('id')
 
@@ -187,24 +188,24 @@ def ensure(module):
         # Medium
         if medium_name:
             medium = get_resource(module=module,
-                                  resource_type='medium',
-                                  resource_func=theforeman.get_medium,
+                                  resource_type=MEDIUM,
+                                  resource_func=theforeman.search_medium,
                                   resource_name=medium_name)
             data['medium_id'] = medium.get('id')
 
         # Organization
         if organization_name:
             organization = get_resource(module=module,
-                                        resource_type='organization',
-                                        resource_func=theforeman.get_organization,
+                                        resource_type=ORGANIZATION,
+                                        resource_func=theforeman.search_organization,
                                         resource_name=organization_name)
             data['organization_id'] = organization.get('id')
 
         # Operatingssystem
         if operatingsystem_name:
             operatingsystem = get_resource(module=module,
-                                           resource_type='operatingsystem',
-                                           resource_func=theforeman.get_operatingsystem,
+                                           resource_type=OPERATINGSYSTEM,
+                                           resource_func=theforeman.search_operatingsystem,
                                            resource_name=operatingsystem_name)
             data['operatingsystem_id'] = operatingsystem.get('id')
 
@@ -219,8 +220,8 @@ def ensure(module):
         # Subnet
         if subnet_name:
             subnet = get_resource(module=module,
-                                  resource_type='subnets',
-                                  resource_func=theforeman.get_subnet,
+                                  resource_type=SUBNET,
+                                  resource_func=theforeman.search_subnet,
                                   resource_name=subnet_name)
             data['subnet_id'] = subnet.get('id')
 
@@ -252,31 +253,31 @@ def ensure(module):
                 changed = True
             elif host_params[0]['value'] != param.get('value'):
                 try:
-                    theforeman.update_host_parameter(host_id=host.get('id'), data=param)
+                    theforeman.update_host_parameter(host_id=host.get('id'), parameter_id=host_params[0].get('id'), data=param)
                 except ForemanError as e:
                     module.fail_json(msg='Could not update parameter %s: %s' % (param.get('name'), e.message))
                 changed = True
 
     try:
-        host_power_state = theforeman.get_host_power(host_id=host.get('name')).get('power')
+        host_power_state = theforeman.get_host_power(host_id=host.get('id')).get('power')
     except ForemanError as e:
         module.fail_json(msg='Could not get host power state: ' + e.message)
 
     if state == 'rebooted':
         try:
-            theforeman.reboot_host(host_id=host.get('name'))
+            theforeman.reboot_host(host_id=host.get('id'))
             return True
         except ForemanError as e:
             module.fail_json(msg='Could not reboot host: ' + e.message)
     elif state == 'running' and host_power_state != 'poweredOn':
         try:
-            theforeman.poweron_host(host_id=host.get('name'))
+            theforeman.poweron_host(host_id=host.get('id'))
             return True
         except ForemanError as e:
             module.fail_json(msg='Could not power on host: ' + e.message)
     elif state == 'stopped' and host_power_state != 'poweredOff':
         try:
-            theforeman.poweroff_host(host_id=host.get('name'))
+            theforeman.poweroff_host(host_id=host.get('id'))
             return True
         except ForemanError as e:
             module.fail_json(msg='Could not power off host: ' + e.message)

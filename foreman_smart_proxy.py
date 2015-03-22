@@ -25,7 +25,7 @@ def ensure(module):
     data['name'] = name
 
     try:
-        smart_proxy = theforeman.get_smart_proxy(data=data)
+        smart_proxy = theforeman.search_smart_proxy(data=data)
     except ForemanError as e:
         module.fail_json(msg='Could not get smart proxy: ' + e.message)
 
@@ -39,7 +39,7 @@ def ensure(module):
 
     if smart_proxy and state == 'absent':
         try:
-            theforeman.delete_smart_proxy(data=subnet)
+            theforeman.delete_smart_proxy(id=smart_proxy.get('id'))
             return True
         except:
             module.fail_json(msg='Could not delete smart proxy: ' + e.message)
@@ -49,7 +49,7 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             name=dict(Type='str', required=True),
-            url=dict(Type='str', required=True),
+            url=dict(Type='str'),
             state=dict(Type='str', Default='present', choices=['present', 'absent']),
             foreman_host=dict(Type='str', Default='127.0.0.1'),
             foreman_port=dict(Type='str', Default='443'),

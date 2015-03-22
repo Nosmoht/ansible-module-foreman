@@ -131,7 +131,7 @@ def ensure(module):
     data['name'] = name
 
     try:
-        resource = theforeman.get_compute_resource(data=data)
+        resource = theforeman.search_compute_resource(data=data)
     except ForemanError as e:
         module.fail_json(msg='Could not get compute resource: ' + e.message)
 
@@ -149,7 +149,7 @@ def ensure(module):
     if resource:
         if state == 'absent':
             try:
-                theforeman.delete_compute_resource(data=resource)
+                theforeman.delete_compute_resource(id=resource.get('id'))
                 return True
             except ForemanError as e:
                 module.fail_json(msg='Could not delete compute resource: ' + e.message)

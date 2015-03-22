@@ -28,7 +28,7 @@ def ensure(module):
     data['name'] = name
 
     try:
-        profile = theforeman.get_compute_profile(data=data)
+        profile = theforeman.search_compute_profile(data=data)
     except ForemanError as e:
         module.fail_json(msg='Could not get compute profile: ' + e.message)
 
@@ -41,7 +41,7 @@ def ensure(module):
 
     if profile and state == 'absent':
         try:
-            theforeman.delete_compute_profile(data=profile)
+            theforeman.delete_compute_profile(id=profile.get('id'))
             changed = True
         except ForemanError as e:
             module.fail_json(msg='Could not delete compute profile: ' + e.message)

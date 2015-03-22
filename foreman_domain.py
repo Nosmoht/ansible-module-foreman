@@ -71,7 +71,7 @@ def ensure(module):
     data['name'] = name
 
     try:
-        domain = theforeman.get_domain(data=data)
+        domain = theforeman.search_domain(data=data)
     except ForemanError as e:
         module.fail_json(msg='Could not get domain: ' + e.message)
 
@@ -84,7 +84,7 @@ def ensure(module):
 
     if domain and state == 'absent':
         try:
-            theforeman.delete_domain(data=domain)
+            theforeman.delete_domain(id=domain.get('id'))
             return True
         except ForemanError as e:
             module.fail_json(msg='Could not delete domain: ' + e.message)

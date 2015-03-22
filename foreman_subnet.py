@@ -42,7 +42,7 @@ def ensure(module):
 
     if subnet and state == 'absent':
         try:
-            theforeman.delete_subnet(data=subnet)
+            theforeman.delete_subnet(id=subnet.get('id'))
             return True
         except ForemanError as e:
             module.fail_json(msg='Could not delete subnet: ' + e.message)
@@ -53,8 +53,8 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             name=dict(Type='str', required=True),
-            network=dict(Type='str', required=True),
-            mask=dict(Type='str', required=True),
+            network=dict(Type='str'),
+            mask=dict(Type='str'),
             state=dict(Type='str', Default='present', choices=['present', 'absent']),
             foreman_host=dict(Type='str', Default='127.0.0.1'),
             foreman_port=dict(Type='str', Default='443'),

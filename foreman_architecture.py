@@ -73,7 +73,7 @@ def ensure(module):
     data['name'] = name
 
     try:
-        arch = theforeman.get_architecture(data=data)
+        arch = theforeman.search_architecture(data=data)
     except ForemanError as e:
         module.fail_json(msg='Could not get architecture: ' + e.message)
 
@@ -86,7 +86,7 @@ def ensure(module):
 
     if arch and state == 'absent':
         try:
-            theforeman.delete_architecture(data=arch)
+            theforeman.delete_architecture(id=arch.get('id'))
             changed = True
         except ForemanError as e:
             module.fail_json(msg='Could not delete architecture: ' + e.message)

@@ -92,20 +92,21 @@ def ensure(module):
 
     data = {}
 
-    if domain_name and domain_name in name:
-        data['name'] = name
+    if domain_name in name:
+        host_name = name
     else:
-        data['name'] = name + '.' + domain_name
+        host_name = name + '.' + domain_name
 
     try:
-        host = theforeman.get_host(data=data)
+        host = theforeman.get_host(data={'name': host_name})
     except ForemanError as e:
-        module.fail_json(msg='Could not find host: ' + e.message)
+        module.fail_json(msg='Could not find host %s: %s' % (host_name, e.message))
 
     if not host:
         if state == 'absent':
             return False
 
+        data['name'] = host_name
         # Architecture
         if architecture_name:
             architecture = get_resource(module=module,

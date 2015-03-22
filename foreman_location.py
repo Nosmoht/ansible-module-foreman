@@ -24,7 +24,7 @@ def ensure(module):
     data['name'] = name
 
     try:
-        domain = theforeman.get_location(data=data)
+        domain = theforeman.search_location(data=data)
     except ForemanError as e:
         module.fail_json(msg='Could not get location: ' + e.message)
 
@@ -37,7 +37,7 @@ def ensure(module):
 
     if domain and state == 'absent':
         try:
-            theforeman.delete_location(data=domain)
+            theforeman.delete_location(id=domain.get('id'))
             return True
         except ForemanError as e:
             module.fail_json('Could not delete location: ' + e.message)

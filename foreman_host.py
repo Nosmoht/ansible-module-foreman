@@ -59,6 +59,7 @@ def ensure(module):
     hostgroup_name = module.params['hostgroup']
     image_name = module.params['image']
     location_name = module.params['location']
+    managed = module.params['managed']
     medium_name = module.params['medium']
     operatingsystem_name = module.params['operatingsystem']
     organization_name = module.params['organization']
@@ -163,6 +164,10 @@ def ensure(module):
                                     resource_name=location_name)
             data['location_id'] = location.get('id')
 
+        # Managed
+        if managed:
+            data['managed'] = managed
+
         # Medium
         if medium_name:
             medium = get_resource(module=module,
@@ -246,6 +251,7 @@ def main():
             hostgroup           = dict(Type='str', required=False),
             image               = dict(Type='str',required=False),
             location            = dict(Type='str', required=False),
+            managed             = dict(Type='str', required=False),
             medium              = dict(Type='str', required=False),
             operatingsystem     = dict(Type='str', required=False),
             organization        = dict(Type='str', required=False),

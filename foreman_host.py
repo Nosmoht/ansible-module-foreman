@@ -113,6 +113,8 @@ def ensure(module):
                                         resource_func=theforeman.search_architecture,
                                         resource_name=architecture_name)
         data['architecture_id'] = architecture.get('id')
+
+        # Build
         data['build'] = build
 
         # Compute Profile
@@ -152,8 +154,7 @@ def ensure(module):
             data['domain_id'] = domain.get('id')
 
         # Enabled
-        if enabled:
-            data['enabled'] = enabled
+        data['enabled'] = enabled
 
         # Environment
         if environment_name:
@@ -180,8 +181,7 @@ def ensure(module):
             data['location_id'] = location.get('id')
 
         # Managed
-        if managed:
-            data['managed'] = managed
+        data['managed'] = managed
 
         # Medium
         if medium_name:
@@ -291,12 +291,12 @@ def main():
             compute_profile=dict(Type='str', required=False),
             compute_resource=dict(Type='str', required=False),
             domain=dict(Type='str', required=False),
-            enabled=dict(Type='str', required=False),
+            enabled=dict(Type='str', default=False),
             environment=dict(Type='str', required=False),
             hostgroup=dict(Type='str', required=False),
             image=dict(Type='str', required=False),
             location=dict(Type='str', required=False),
-            managed=dict(Type='str', required=False),
+            managed=dict(Type='str', default=False),
             medium=dict(Type='str', required=False),
             operatingsystem=dict(Type='str', required=False),
             organization=dict(Type='str', required=False),

@@ -57,6 +57,11 @@ def get_resource(module, resource_type, resource_func, resource_name):
         module.fail_json(msg="Error while getting %s: %s" % (resource_type, e.message))
     return result
 
+def bool2str(value):
+    if value:
+        return 'true'
+    return 'false'
+
 def ensure(module):
     changed = False
     name = module.params['name']
@@ -115,7 +120,7 @@ def ensure(module):
         data['architecture_id'] = architecture.get('id')
 
         # Build
-        data['build'] = build
+        data['build'] = bool2str(build)
 
         # Compute Profile
         if compute_profile_name:
@@ -154,7 +159,7 @@ def ensure(module):
             data['domain_id'] = domain.get('id')
 
         # Enabled
-        data['enabled'] = enabled
+        data['enabled'] = bool2str(enabled)
 
         # Environment
         if environment_name:
@@ -181,7 +186,7 @@ def ensure(module):
             data['location_id'] = location.get('id')
 
         # Managed
-        data['managed'] = managed
+        data['managed'] = bool2str(managed)
 
         # Medium
         if medium_name:

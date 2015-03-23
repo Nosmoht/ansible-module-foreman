@@ -2,10 +2,11 @@
 Ansible library to configure [Foreman] and manage hosts.
 
 # Requirements
-[python-foreman] >= 0.11.2 is required to be installed on the system where Ansible is started from.
+[python-foreman] >= 0.11.4 is required to be installed on the system where Ansible is started from.
 
 # Examples
 The following parameters are always required so the module knows how to connect to the Foreman [API v2].
+The are replaced in the examples by three dots (...).
 
 ```
 foreman_host: foreman.example.com
@@ -51,6 +52,7 @@ foreman_pass: password
 ```
 
 ## Compute Attribute
+This is an example to configure VMware vSphere attributes.
 ```
 - name: Ensure Compute Attribute
   foreman_compute_attribute:
@@ -109,6 +111,7 @@ foreman_pass: password
   foreman_environment:
     name: Production
     state: present
+    ...
 ```
 ## Host
 ### Provision by Medium

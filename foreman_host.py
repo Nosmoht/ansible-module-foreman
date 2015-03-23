@@ -232,7 +232,7 @@ def ensure(module):
 
     if state == 'absent':
         try:
-            theforeman.delete_host(id, host.get('id'))
+            theforeman.delete_host(id=host.get('id'))
             return True
         except ForemanError as e:
             module.fail_json(msg='Could not delete host: ' + e.message)

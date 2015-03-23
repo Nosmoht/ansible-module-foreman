@@ -77,8 +77,8 @@ def ensure(module):
     except ForemanError as e:
         module.fail_json(msg='Could not get compute profile: ' + e.message)
 
-    compute_attributes = filter(lambda item: item['compute_profile_name'] == compute_profile_name, 
-                                compute_resource.get('compute_attributes'))
+    compute_attributes = theforeman.get_compute_attribute(compute_resource_id=compute_resource.get('id'),
+                                                          compute_profile_id=compute_profile.get('id'))
     
     if compute_attributes:
         compute_attribute = compute_attributes[0]

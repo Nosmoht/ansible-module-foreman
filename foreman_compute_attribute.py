@@ -64,14 +64,14 @@ def ensure(module):
                          password=foreman_pass)
 
     try:
-        compute_resource = theforeman.get_compute_resource(data={'name': compute_resource_name})
+        compute_resource = theforeman.search_compute_resource(data={'name': compute_resource_name})
         if not compute_resource:
             module.fail_json(msg='Compute resource not found: ' + compute_resource_name)
     except ForemanError as e:
         module.fail_json(msg='Could not get compute resource: ' + e.message)
 
     try:
-        compute_profile = theforeman.get_compute_profile(data={'name': compute_profile_name})
+        compute_profile = theforeman.search_compute_profile(data={'name': compute_profile_name})
         if not compute_profile:
             module.fail_json(msg='Compute profile not found: ' + compute_profile_name)
     except ForemanError as e:
@@ -99,7 +99,7 @@ def ensure(module):
     if cmp(compute_attribute.get('vm_attrs'), vm_attributes) != 0:
         try:
             compute_attribute['vm_attrs'] = vm_attributes
-            theforeman.update_compute_attribute(data=compute_attribute)
+            theforeman.update_compute_attribute(id=compute_attribute.get('id'), data=compute_attribute)
             return True
         except ForemanError as e:
             module.fail_json(msg='Could not update compute attribute: ' + e.message)

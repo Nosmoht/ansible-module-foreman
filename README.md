@@ -115,7 +115,7 @@ foreman_pass: password
 ```
 - name: Ensure Host
   foreman_host:
-    name: ansible-host-01.example.com
+    name: ansible-host-01
     state: running
     architecture: x86_64
     compute_profile: 1-Small
@@ -133,7 +133,7 @@ foreman_pass: password
 ```
 - name: Ensure Host
   foreman_host:
-    name: ansible-host-01.example.com
+    name: ansible-host-01
     state: running
     architecture: x86_64
     compute_profile: 1-Small
@@ -145,6 +145,24 @@ foreman_pass: password
     location: Somewhere
     operatingsystem: CoreOS
     organization: Example Org.
+...
+```
+## Delete host
+To delete a host Foreman must know the FQDN. Use one of the following methods:
+```
+- name: Ensure absent host
+  foreman_host:
+    name: ansible-host-01
+    domain: example.com
+    state: absent
+    ...
+```
+or
+```
+- name: Ensure absent host
+  foreman_host:
+    name: ansible-host-01.example.com
+    state: absent
 ...
 ```
 ## Hostgroup

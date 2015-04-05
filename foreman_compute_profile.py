@@ -1,6 +1,53 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+DOCUMENTATION = '''
+---
+module: foreman_compute_profile
+short_description: Manage Foreman Compute Profiles using Foreman API v2
+description:
+- Create and delete Foreman Compute Profiles using Foreman API v2
+options:
+  name:
+    description: Name of Compute Profile
+    required: true
+    default: null
+    aliases: []
+  state:
+    description: State of Compute Profile
+    required: false
+    default: present
+    choices: ["present", "absent"]
+  foreman_host:
+    description: Hostname or IP address of Foreman
+    required: false
+    default: 127.0.0.1
+  foreman_port:
+    description: Port of Foreman API
+    required: false
+    default: 443
+  foreman_user:
+    description: Username to be used to authenticate on Foreman
+    required: true
+    default: null
+  foreman_pass:
+    description: Password to be used to authenticate user on Foreman
+    required: true
+    default: null
+notes:
+- Requires the python-foreman package to be installed. See https://github.com/Nosmoht/python-foreman.
+author: Thomas Krahn
+'''
+
+EXAMPLES = '''
+- name: Ensure Extra Large Compute Profile is present
+  foreman_compute_profile:
+    name: 4-Extra-Large
+    state: present
+    foreman_user: admin
+    foreman_pass: secret
+'''
+
 try:
     from foreman.foreman import *
 except ImportError:
@@ -44,6 +91,7 @@ def ensure(module):
             changed = True
         except ForemanError as e:
             module.fail_json(msg='Could not delete compute profile: ' + e.message)
+
     return changed
 
 def main():

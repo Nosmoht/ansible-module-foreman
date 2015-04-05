@@ -35,7 +35,7 @@ options:
     required: true
     default: null
 notes:
-- Requires the python-foreman package to be installed.
+- Requires the python-foreman package to be installed. See https://github.com/Nosmoht/python-foreman.
 author: Thomas Krahn
 '''
 

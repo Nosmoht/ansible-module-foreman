@@ -35,12 +35,19 @@ def ensure(module):
         except ForemanError as e:
             module.fail_json(msg='Could not create medium: {0}'.format(e.message))
 
-    if medium and state == 'absent':
-        try:
-            theforeman.delete_medium(id=medium.get('id'))
-            return True
-        except ForemanError as e:
-            module.fail_json('Could not delete medium: {0}'.format(e.message))
+    if medium:
+        if state == 'absent':
+            try:
+                theforeman.delete_medium(id=medium.get('id'))
+                return True
+            except ForemanError as e:
+                module.fail_json('Could not delete medium: {0}'.format(e.message))
+        if medium.get('path') != path:
+            try:
+                theforeman.update_medium(id=medium.get('id'), data=data)
+                return True
+            except ForemanError as e:
+                module.fail_json('Could not update medium: {0}'.format(e.message))
 
     return False
 

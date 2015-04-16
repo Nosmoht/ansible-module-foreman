@@ -194,13 +194,24 @@ or
 ```
 
 ## Medium
-Not implemented yet. Coming soon.
+```
+- name: Ensure Medium
+  foreman_medium:
+    name: CoreOS
+    path: http://$release.release.core-os.net
+    state: present
+```
 
 ## Operatingsystem
 Not implemented yet. Coming soon.
 
 ## Organization
-Not implemented yet. Coming soon.
+```
+- name: Ensure Organization
+  foreman_organization:
+    name: MyOrganization
+    state: present
+```
 
 ## Smart Proxy
 ```

@@ -200,10 +200,19 @@ or
     name: CoreOS
     path: http://$release.release.core-os.net
     state: present
+    ...
 ```
 
 ## Operatingsystem
-Not implemented yet. Coming soon.
+```
+- name: Ensure Operatingsystem
+  foreman_operatingsystem:
+    name: CentOS
+    major: 6
+    minor: 6
+    state: present
+  ...
+```
 
 ## Organization
 ```
@@ -211,6 +220,7 @@ Not implemented yet. Coming soon.
   foreman_organization:
     name: MyOrganization
     state: present
+    ...
 ```
 
 ## Smart Proxy
@@ -220,6 +230,7 @@ Not implemented yet. Coming soon.
     name: SmartProxy01
     url: http://localhost:8443
     state: present
+    ...
 ```
 
 # License

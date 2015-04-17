@@ -1,6 +1,110 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+DOCUMENTATION = '''
+---
+module: foreman_architecture
+short_description: Manage Foreman Architectures using Foreman API v2
+description:
+- Create and delete Foreman Architectures using Foreman API v2
+options:
+  name:
+    description: Subnet name
+    required: True
+    default: null
+    aliases: []
+  network:
+    description: Subnet network
+    required: False
+    default: null
+    aliases: []
+  mask:
+    description: Netmask for this subnet
+    required: False
+    default: null
+    aliases: []
+  gateway:
+    description: Gateway for this subnet
+    required: False
+    default: null
+    aliases: []
+  dns_primary:
+    description: Primary DNS for this subnet
+    required: False
+    default: null
+    aliases: []
+  dns_secondary:
+    description: Secondary DNS for this subnet
+    required: False
+    default: null
+    aliases: []
+  ipam:
+    description: Enable IP Address auto suggestion for this subnet
+    required: False
+    default: null
+    aliases: []
+    choices: ['DHCP', 'Internal DB', 'None']),
+  ip_from:
+    description: Starting IP Address for IP auto suggestion
+    required: False
+    default: null
+    aliases: []
+  ip_to:
+    description: Ending IP Address for IP auto suggestion
+    required: False
+    default: null
+    aliases: []
+  state:
+    description: State of subnet
+    required: false
+    default: present
+    choices: ["present", "absent"]
+  vlanid:
+    description: VLAN ID for this subnet
+    required: False
+    default: null
+    aliases: []
+  foreman_host:
+    description: Hostname or IP address of Foreman system
+    required: false
+    default: 127.0.0.1
+  foreman_port:
+    description: Port of Foreman API
+    required: false
+    default: 443
+  foreman_user:
+    description: Username to be used to authenticate on Foreman
+    required: true
+    default: null
+  foreman_pass:
+    description: Password to be used to authenticate user on Foreman
+    required: true
+    default: null
+notes:
+- Requires the python-foreman package to be installed. See https://github.com/Nosmoht/python-foreman.
+author: Thomas Krahn <ntbc@gmx.net>
+'''
+
+EXAMPLES = '''
+- name: Ensure Subnet
+  foreman_subnet:
+    name: MySubnet
+    network: 192.168.123.0
+    mask: 255.255.255.0
+    dns_primary: 192.168.123.1
+    dns_secondary: 192.168.123.2
+    ipam: DHCP
+    ip_from: 192.168.123.3
+    ip_to: 192.168.123.253
+    gateway: 192.168.123.254
+    vlanid: 123
+    state: present
+    foreman_host: 127.0.0.1
+    foreman_port: 443
+    foreman_user: admin
+    foreman_pass: secret
+'''
+
 try:
     from foreman.foreman import *
 except ImportError:

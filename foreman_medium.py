@@ -3,25 +3,28 @@
 
 try:
     from foreman.foreman import *
+
+    foremanclient_found = True
 except ImportError:
     foremanclient_found = False
-else:
-    foremanclient_found = True
+
 
 def ensure(module):
     name = module.params['name']
     path = module.params['path']
     state = module.params['state']
+
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
     foreman_pass = module.params['foreman_pass']
+
     theforeman = Foreman(hostname=foreman_host,
                          port=foreman_port,
                          username=foreman_user,
                          password=foreman_pass)
-    data = {}
-    data['name'] = name
+
+    data = {'name': name}
 
     try:
         medium = theforeman.search_medium(data=data)
@@ -51,16 +54,17 @@ def ensure(module):
 
     return False
 
+
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            name=dict(Type='str', required=True),
+            name=dict(type='str', required=True),
             path=dict(type='str', required=False),
-            state=dict(Type='str', Default='present', choices=['present', 'absent']),
-            foreman_host=dict(Type='str', Default='127.0.0.1'),
-            foreman_port=dict(Type='str', Default='443'),
-            foreman_user=dict(Type='str', required=True),
-            foreman_pass=dict(Type='str', required=True)
+            state=dict(type='str', default='present', choices=['present', 'absent']),
+            foreman_host=dict(type='str', default='127.0.0.1'),
+            foreman_port=dict(type='str', default='443'),
+            foreman_user=dict(type='str', required=True),
+            foreman_pass=dict(type='str', required=True)
         ),
     )
 
@@ -72,4 +76,5 @@ def main():
 
 # import module snippets
 from ansible.module_utils.basic import *
+
 main()

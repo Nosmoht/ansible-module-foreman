@@ -3,10 +3,11 @@
 
 try:
     from foreman.foreman import *
+
+    foremanclient_found = True
 except ImportError:
     foremanclient_found = False
-else:
-    foremanclient_found = True
+
 
 def ensure(module):
     description = module.params['description']
@@ -14,16 +15,18 @@ def ensure(module):
     minor = module.params['minor']
     name = module.params['name']
     state = module.params['state']
+
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
     foreman_pass = module.params['foreman_pass']
+
     theforeman = Foreman(hostname=foreman_host,
                          port=foreman_port,
                          username=foreman_user,
                          password=foreman_pass)
-    data = {}
-    data['name'] = name
+
+    data = {'name': name}
 
     try:
         os = theforeman.search_operatingsystem(data=data)
@@ -49,8 +52,7 @@ def ensure(module):
             except ForemanError as e:
                 module.fail_json(msg='Could not delete operatingsystem: {0}'.format(e.message))
 
-        if os.get('description') != description or os.get('minor') != minor:
-            module.fail_json(msg=os)
+        if not all(data[key] == os.get(key, data[key]) for key in data):
             try:
                 theforeman.update_operatingsystem(id=os.get('id'), data=data)
                 return True
@@ -59,18 +61,19 @@ def ensure(module):
 
     return False
 
+
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            description=dict(Type='str', required=False),
-            major=dict(Type='str', required=True),
-            minor=dict(Type='str', required=False),
-            name=dict(Type='str', required=True),
-            state=dict(Type='str', Default='present', choices=['present', 'absent']),
-            foreman_host=dict(Type='str', Default='127.0.0.1'),
-            foreman_port=dict(Type='str', Default='443'),
-            foreman_user=dict(Type='str', required=True),
-            foreman_pass=dict(Type='str', required=True)
+            description=dict(type='str', required=False),
+            major=dict(type='str', required=True),
+            minor=dict(type='str', required=False),
+            name=dict(type='str', required=True),
+            state=dict(type='str', default='present', choices=['present', 'absent']),
+            foreman_host=dict(type='str', default='127.0.0.1'),
+            foreman_port=dict(type='str', default='443'),
+            foreman_user=dict(type='str', required=True),
+            foreman_pass=dict(type='str', required=True)
         ),
     )
 
@@ -82,4 +85,5 @@ def main():
 
 # import module snippets
 from ansible.module_utils.basic import *
+
 main()

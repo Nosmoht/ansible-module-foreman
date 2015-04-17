@@ -93,6 +93,7 @@ except ImportError:
 else:
     foremanclient_found = True
 
+
 def get_required_provider_params(provider):
     provider_name = provider.lower()
 
@@ -103,7 +104,8 @@ def get_required_provider_params(provider):
     elif provider_name == 'openstack':
         return ['url', 'user', 'password', 'tenant']
     elif provider_name == 'vmware':
-        return [ 'datacenter', 'user', 'password', 'server']
+        return ['datacenter', 'user', 'password', 'server']
+
 
 def ensure(module):
     name = module.params['name']
@@ -113,8 +115,8 @@ def ensure(module):
     if provider:
         provider_params = get_required_provider_params(provider)
         for param in provider_params:
-            if not module.params.has_key(param):
-                module.fail_json(msg='Parameter ' + param + ' must be defined for provide ' + provider)
+            if param in not module.params:
+                module.fail_json(msg='Parameter {0} must be defined for provide {1}'.format(param, provider))
 
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
@@ -126,13 +128,12 @@ def ensure(module):
                          username=foreman_user,
                          password=foreman_pass)
 
-    data = {}
-    data['name'] = name
+    data = {'name': name}
 
     try:
         resource = theforeman.search_compute_resource(data=data)
     except ForemanError as e:
-        module.fail_json(msg='Could not get compute resource: ' + e.message)
+        module.fail_json(msg='Could not get compute resource: {0}'.format(e.message))
 
     if not resource and state == 'present':
         data['provider'] = provider
@@ -143,7 +144,7 @@ def ensure(module):
             theforeman.create_compute_resource(data=data)
             return True
         except ForemanError as e:
-            module.fail_json(msg='Could not create compute resource: ' + e.message)
+            module.fail_json(msg='Could not create compute resource: {0}'.format(e.message))
 
     if resource:
         if state == 'absent':
@@ -151,35 +152,37 @@ def ensure(module):
                 theforeman.delete_compute_resource(id=resource.get('id'))
                 return True
             except ForemanError as e:
-                module.fail_json(msg='Could not delete compute resource: ' + e.message)
+                module.fail_json(msg='Could not delete compute resource: {0}'.format(e.message))
 
     return False
+
 
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            name=dict(Type='str', required=True),
-            datacenter=dict(Type='str'),
-            password=dict(Type='str'),
-            provider=dict(Type='str'),
-            server=dict(Type='str'),
-            url=dict(Type='str'),
-            user=dict(Type='str'),
-            state=dict(Type='str', Default='present', choices=['present', 'absent']),
-            tenat=dict(Type='str'),
-            foreman_host=dict(Type='str', Default='127.0.0.1'),
-            foreman_port=dict(Type='str', Default='443'),
-            foreman_user=dict(Type='str', required=True),
-            foreman_pass=dict(Type='str', required=True)
+            name=dict(type='str', required=True),
+            datacenter=dict(type='str', required=False),
+            password=dict(type='str', required=False),
+            provider=dict(type='str', required=False),
+            server=dict(type='str', required=False),
+            url=dict(type='str', required=False),
+            user=dict(type='str', required=False),
+            state=dict(type='str', default='present', choices=['present', 'absent']),
+            tenat=dict(type='str', required=False),
+            foreman_host=dict(type='str', default='127.0.0.1'),
+            foreman_port=dict(type='str', default='443'),
+            foreman_user=dict(type='str', required=True),
+            foreman_pass=dict(type='str', required=True)
         ),
     )
 
     if not foremanclient_found:
-        module.fail_json(msg='python-foreman module is required')
+        module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
     changed = ensure(module)
     module.exit_json(changed=changed, name=module.params['name'])
 
 # import module snippets
 from ansible.module_utils.basic import *
+
 main()

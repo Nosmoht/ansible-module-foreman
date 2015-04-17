@@ -23,20 +23,20 @@ def ensure(module):
     data['name'] = name
 
     try:
-        domain = theforeman.search_location(data=data)
+        location = theforeman.search_location(data=data)
     except ForemanError as e:
         module.fail_json(msg='Could not get location: ' + e.message)
 
-    if not domain and state == 'present':
+    if not location and state == 'present':
         try:
             theforeman.create_location(data=data)
             return True
         except ForemanError as e:
             module.fail_json(msg='Could not create location: ' + e.message)
 
-    if domain and state == 'absent':
+    if location and state == 'absent':
         try:
-            theforeman.delete_location(id=domain.get('id'))
+            theforeman.delete_location(id=location.get('id'))
             return True
         except ForemanError as e:
             module.fail_json('Could not delete location: ' + e.message)

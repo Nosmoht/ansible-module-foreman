@@ -29,18 +29,14 @@ def ensure(module):
     except ForemanError as e:
         module.fail_json(msg='Could not get subnet: {0}'.format(e.message))
 
-    if module.params.has_key('network'):
-        data['network'] = module.params['network']
-    if module.params.has_key('mask'):
-        data['mask'] = module.params['mask']
-    if module.params.has_key('ipam'):
-        data['ipam'] = module.params['ipam']
+    for key in ['dns_primary', 'dns_secondary', 'gateway', 'ipam', 'mask',
+                'network', 'network_address', 'vlanid']:
+        if module.params.has_key(key):
+            data[key] = module.params[key]
     if module.params.has_key('ip_from'):
         data['from'] = module.params['ip_from']
     if module.params.has_key('ip_to'):
         data['to'] = module.params['ip_to']
-    if module.params.has_key('vlanid'):
-        data['vlanid'] = module.params['vlanid']
 
     if not subnet and state == 'present':
         try:
@@ -69,6 +65,9 @@ def ensure(module):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
+            dns_primary=dict(type='str', required=False),
+            dns_secondary=dict(type='str', required=False),
+            gateway=dict(type='str', required=False),
             name=dict(type='str', required=True),
             network=dict(type='str', required=False),
             mask=dict(type='str', required=False),

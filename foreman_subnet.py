@@ -112,6 +112,7 @@ except ImportError:
 else:
     foremanclient_found = True
 
+
 def ensure(module):
     name = module.params['name']
     state = module.params['state']
@@ -125,21 +126,20 @@ def ensure(module):
                          port=foreman_port,
                          username=foreman_user,
                          password=foreman_pass)
-    data = {}
-    data['name'] = name
+
+    data = {'name': name}
 
     try:
         subnet = theforeman.search_subnet(data=data)
     except ForemanError as e:
         module.fail_json(msg='Could not get subnet: {0}'.format(e.message))
 
-    for key in ['dns_primary', 'dns_secondary', 'gateway', 'ipam', 'mask',
-                'network', 'network_address', 'vlanid']:
-        if module.params.has_key(key):
+    for key in ['dns_primary', 'dns_secondary', 'gateway', 'ipam', 'mask', 'network', 'network_address', 'vlanid']:
+        if key in module.params:
             data[key] = module.params[key]
-    if module.params.has_key('ip_from'):
+    if 'ip_from' in module.params:
         data['from'] = module.params['ip_from']
-    if module.params.has_key('ip_to'):
+    if 'ip_to' in module.params:
         data['to'] = module.params['ip_to']
 
     if not subnet and state == 'present':
@@ -165,6 +165,7 @@ def ensure(module):
                 module.fail_json(msg='Could not update subnet: {0}'.format(e.message))
 
     return False
+
 
 def main():
     module = AnsibleModule(
@@ -195,4 +196,5 @@ def main():
 
 # import module snippets
 from ansible.module_utils.basic import *
+
 main()

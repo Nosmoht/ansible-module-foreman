@@ -13,13 +13,13 @@ options:
     required: true
     default: null
   compute_profile:
-    description: Name of compute profile 
+    description: Name of compute profile
     required: true
     default: null
   vm_attributes:
     description: Hash containing the data of vm_attrs
     required: true
-    default: null 
+    default: null
   foreman_host:
     description: Hostname or IP address of Foreman system
     required: false
@@ -37,16 +37,18 @@ options:
     required: true
     default: null
 notes:
-- Requires the python-foreman package to be installed.
+- Requires the python-foreman package to be installed. See https://github.com/Nosmoht/python-foreman.
 author: Thomas Krahn
 '''
 
 try:
     from foreman import Foreman
     from foreman.foreman import ForemanError
+
     foremanclient_found = True
 except ImportError:
     foremanclient_found = False
+
 
 def ensure(module):
     compute_profile_name = module.params['compute_profile']
@@ -57,7 +59,7 @@ def ensure(module):
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
     foreman_pass = module.params['foreman_pass']
-    
+
     theforeman = Foreman(hostname=foreman_host,
                          port=foreman_port,
                          username=foreman_user,
@@ -66,45 +68,45 @@ def ensure(module):
     try:
         compute_resource = theforeman.search_compute_resource(data={'name': compute_resource_name})
         if not compute_resource:
-            module.fail_json(msg='Compute resource not found: ' + compute_resource_name)
+            module.fail_json(msg='Compute resource not found: {0}'.format(compute_resource_name))
     except ForemanError as e:
-        module.fail_json(msg='Could not get compute resource: ' + e.message)
+        module.fail_json(msg='Could not get compute resource: {0}'.format(compute_resource_name))
 
     try:
         compute_profile = theforeman.search_compute_profile(data={'name': compute_profile_name})
         if not compute_profile:
-            module.fail_json(msg='Compute profile not found: ' + compute_profile_name)
+            module.fail_json(msg='Compute profile not found: {0}'.format(compute_resource_name))
     except ForemanError as e:
-        module.fail_json(msg='Could not get compute profile: ' + e.message)
+        module.fail_json(msg='Could not get compute profile: {0}'.format(compute_resource_name))
 
     compute_attributes = theforeman.get_compute_attribute(compute_resource_id=compute_resource.get('id'),
                                                           compute_profile_id=compute_profile.get('id'))
-    
+
     if compute_attributes:
         compute_attribute = compute_attributes[0]
     else:
         compute_attribute = None
 
     if not compute_attribute:
-        data = {}
-        data['compute_resource_id'] = compute_resource.get('id')
-        data['compute_profile_id'] = compute_profile.get('id')
-        data['vm_attrs'] = vm_attributes
+        data = {'compute_resource_id': compute_resource.get('id'), 'compute_profile_id': compute_profile.get('id'),
+                'vm_attrs': vm_attributes}
         try:
             compute_attribute = theforeman.create_compute_attribute(data=data)
             return True
         except ForemanError as e:
-            module.fail_json(msg='Could not create compute attribute: ' + e.message)
+            module.fail_json(msg='Could not create compute attribute: {0}'.format(e.message))
 
-    if cmp(compute_attribute.get('vm_attrs'), vm_attributes) != 0:
+    if not all(compute_attribute.get(key, vm_attributes.get(key)) == vm_attributes.get(key) for key in
+               vm_attributes) != 0:
         try:
             compute_attribute['vm_attrs'] = vm_attributes
             theforeman.update_compute_attribute(id=compute_attribute.get('id'), data=compute_attribute)
             return True
         except ForemanError as e:
-            module.fail_json(msg='Could not update compute attribute: ' + e.message)
+            module.fail_json(msg='Could not update compute attribute: {0}'.format(e.message))
 
     return False
+
 
 def main():
     module = AnsibleModule(
@@ -120,12 +122,13 @@ def main():
     )
 
     if not foremanclient_found:
-        module.fail_json(msg='python-foreman is required')
+        module.fail_json(msg='python-foreman is required. See https://github.com/Nosmoht/python-foreman.')
 
     changed = ensure(module)
-    module.exit_json(changed=changed, 
-                     name="%s - %s" % (module.params['compute_resource'], module.params['compute_profile']))
+    module.exit_json(changed=changed,
+                     name='{0} - {1}'.format(module.params['compute_resource'], module.params['compute_profile']))
 
 # import module snippets
 from ansible.module_utils.basic import *
+
 main()

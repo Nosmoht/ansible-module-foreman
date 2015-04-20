@@ -9,23 +9,43 @@ else:
     foremanclient_found = True
 
 
+def get_user_ids(module, theforeman, users):
+    result = []
+    for i in range(0, len(users)):
+        try:
+            user = theforeman.search_user(data={'login': users[i]})
+            if not user:
+                module.fail_json('Could not find user {0}'.format(users[i]))
+            result.append(user.get('id'))
+        except ForemanError as e:
+            module.fail_json('Could not get user: {0}'.format(e.message))
+    return result
+
+
 def ensure(module):
     name = module.params['name']
     state = module.params['state']
+    users = module.params['users']
+
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
     foreman_pass = module.params['foreman_pass']
+
     theforeman = Foreman(hostname=foreman_host,
                          port=foreman_port,
                          username=foreman_user,
                          password=foreman_pass)
+
     data = {'name': name}
 
     try:
         location = theforeman.search_location(data=data)
     except ForemanError as e:
         module.fail_json(msg='Could not get location: {0}'.format(e.message))
+
+    if users:
+        data['user_ids'] = get_user_ids(module, theforeman, users)
 
     if not location and state == 'present':
         try:
@@ -49,6 +69,7 @@ def main():
         argument_spec=dict(
             name=dict(type='str', required=True),
             state=dict(type='str', default='present', choices=['present', 'absent']),
+            users=dict(type='list', required=False),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),
             foreman_user=dict(type='str', required=True),

@@ -13,6 +13,10 @@ options:
     required: true
     default: null
     aliases: []
+  fullname:
+    description: Description of the domain
+    required: false
+    default: null
   state:
     description: Domain state
     required: false
@@ -43,6 +47,7 @@ EXAMPLES = '''
 - name: Ensure example.com
   foreman_domain:
     name: example.com
+    fullname: Example domain
     state: present
     foreman_host: 127.0.0.1
     foreman_port: 443
@@ -60,6 +65,7 @@ else:
 
 def ensure(module):
     name = module.params['name']
+    fullname = module.params['fullname']
     state = module.params['state']
 
     foreman_host = module.params['foreman_host']
@@ -78,6 +84,8 @@ def ensure(module):
         domain = theforeman.search_domain(data=data)
     except ForemanError as e:
         module.fail_json(msg='Could not get domain: {0}'.format(e.message))
+
+    data['fullname'] = fullname
 
     if not domain and state == 'present':
         try:
@@ -101,6 +109,7 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             name=dict(type='str', required=True),
+            fullname=dict(type='str', required=False),
             state=dict(type='str', default='present', choices=['present', 'absent']),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),

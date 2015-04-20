@@ -1,6 +1,63 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+DOCUMENTATION = '''
+---
+module: foreman_location
+short_description:
+- Manage Foreman Location using Foreman API v2. This module requires Katello to be installed in addition to Foreman.
+description:
+- Create, opdate and and delete Foreman Locations using Foreman API v2
+options:
+  name:
+    description: Location name
+    required: True
+    default: null
+    aliases: []
+  state:
+    description: Location state
+    required: False
+    default: present
+    choices: ["present", "absent"]
+  users:
+    description: List of usernames assigned to the location
+    required: False
+    default: null
+  foreman_host:
+    description: Hostname or IP address of Foreman system
+    required: false
+    default: 127.0.0.1
+  foreman_port:
+    description: Port of Foreman API
+    required: false
+    default: 443
+  foreman_user:
+    description: Username to be used to authenticate on Foreman
+    required: true
+    default: null
+  foreman_pass:
+    description: Password to be used to authenticate user on Foreman
+    required: true
+    default: null
+notes:
+- Requires the python-foreman package to be installed. See https://github.com/Nosmoht/python-foreman.
+author: Thomas Krahn
+'''
+
+EXAMPLES = '''
+- name: Ensure New York Datacenter
+  foreman_location:
+    name: MY-DC
+    state: present
+    users:
+    - pinky
+    - brain
+    foreman_host: 127.0.0.1
+    foreman_port: 443
+    foreman_user: admin
+    foreman_pass: secret
+'''
+
 try:
     from foreman.foreman import *
 except ImportError:
@@ -54,12 +111,13 @@ def ensure(module):
         except ForemanError as e:
             module.fail_json(msg='Could not create location: {0}'.format(e.message))
 
-    if location and state == 'absent':
-        try:
-            theforeman.delete_location(id=location.get('id'))
-            return True
-        except ForemanError as e:
-            module.fail_json('Could not delete location: {0}'.format(e.message))
+    if location:
+        if state == 'absent':
+            try:
+                theforeman.delete_location(id=location.get('id'))
+                return True
+            except ForemanError as e:
+                module.fail_json('Could not delete location: {0}'.format(e.message))
 
     return False
 

@@ -102,6 +102,13 @@ def ensure(module):
             except ForemanError as e:
                 module.fail_json(msg='Could not delete domain: {0}'.format(e.message))
 
+        if not all(data[key] == domain[key] for key in data):
+            try:
+                theforeman.update_domain(id=domain.get('id'), data=data)
+                return True
+            except ForemanError as e:
+                module.fail_json(msg='Could not update domain: {0}'.format(e.message))
+
     return False
 
 

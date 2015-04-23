@@ -89,27 +89,27 @@ def ensure(module):
 
     if not domain and state == 'present':
         try:
-            theforeman.create_domain(data=data)
-            return True
+            domain = theforeman.create_domain(data=data)
+            return True, domain
         except ForemanError as e:
             module.fail_json(msg='Could not create domain: {0}'.format(e.message))
 
     if domain:
         if state == 'absent':
             try:
-                theforeman.delete_domain(id=domain.get('id'))
-                return True
+                domain = theforeman.delete_domain(id=domain.get('id'))
+                return True, domain
             except ForemanError as e:
                 module.fail_json(msg='Could not delete domain: {0}'.format(e.message))
 
         if not all(data[key] == domain[key] for key in data):
             try:
-                theforeman.update_domain(id=domain.get('id'), data=data)
-                return True
+                domain = theforeman.update_domain(id=domain.get('id'), data=data)
+                return True, domain
             except ForemanError as e:
                 module.fail_json(msg='Could not update domain: {0}'.format(e.message))
 
-    return False
+    return False, domain
 
 
 def main():
@@ -128,8 +128,8 @@ def main():
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
-    changed = ensure(module)
-    module.exit_json(changed=changed, name=module.params['name'])
+    changed, domain = ensure(module)
+    module.exit_json(changed=changed, domain=domain)
 
 # import module snippets
 from ansible.module_utils.basic import *

@@ -215,6 +215,7 @@ or
 ```
 
 ## Organization
+Works only if Katello is used
 ```
 - name: Ensure Organization
   foreman_organization:
@@ -223,14 +224,36 @@ or
     ...
 ```
 
+## Role
+```
+- name: Ensure Role
+  foreman_role:
+    name: MyRole
+    state: present
+```
+
 ## Smart Proxy
 ```
-- name: Esnure Smart Proxy
+- name: Ensure Smart Proxy
   foreman_smart_proxy:
     name: SmartProxy01
     url: http://localhost:8443
     state: present
     ...
+```
+
+## User
+```
+- name: Ensure User
+  foreman_user:
+    login: MyUser
+    firstname: Testing
+    lastname: User
+    mail: testing.user@example.com
+    password: topsecret
+    admin: false
+    auth: 'Internal'
+    state: present
 ```
 
 # License

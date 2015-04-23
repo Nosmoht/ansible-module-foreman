@@ -1,6 +1,87 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+DOCUMENTATION = '''
+---
+module: foreman_hostgroup
+short_description: Manage Foreman Hostgroup using Foreman API v2
+description:
+- Manage Foreman Hostgroup using Foreman API v2
+options:
+  architecture:
+    description: Architecture name
+    required: False
+    default: null
+  domain:
+    description: Domain name
+    required: False
+    default: null
+  environment:
+    description: Environment name
+    required: False
+    default: null
+  medium:
+    description: Medium name
+    required: False
+    default: null
+  name:
+    description: Hostgroup name
+    required: True
+    default: null
+    aliases: []
+  operatingsystem:
+    description: Operatingsystem name
+    required: False
+    default: null
+  partition_table:
+    description: Partition table name
+    required: False
+    default: null
+  smart_proxy:
+    description: Smart Proxy name
+    required: False
+    default: null
+  subnet:
+    description: Subnet name
+    required: False
+    default: null
+  state:
+    description: Hostgroup state
+    required: false
+    default: present
+    choices: ["present", "absent"]
+  foreman_host:
+    description: Hostname or IP address of Foreman system
+    required: false
+    default: 127.0.0.1
+  foreman_port:
+    description: Port of Foreman API
+    required: false
+    default: 443
+  foreman_user:
+    description: Username to be used to authenticate on Foreman
+    required: true
+    default: null
+  foreman_pass:
+    description: Password to be used to authenticate user on Foreman
+    required: true
+    default: null
+notes:
+- Requires the python-foreman package to be installed. See https://github.com/Nosmoht/python-foreman.
+author: Thomas Krahn
+'''
+
+EXAMPLES = '''
+- name: Ensure Hostgroup
+  foreman_hostgroup:
+    name: MyHostgroup
+    state: present
+    foreman_host: 127.0.0.1
+    foreman_port: 443
+    foreman_user: admin
+    foreman_pass: secret
+'''
+
 try:
     from foreman.foreman import *
 except ImportError:
@@ -8,18 +89,18 @@ except ImportError:
 else:
     foremanclient_found = True
 
+
 def get_resource(module, resource_type, resource_func, resource_name):
     try:
         result = resource_func(data={'name': resource_name})
         if not result:
-            module.fail_json(msg="%s %s not found" % (resource_type, resource_name))
+            module.fail_json(msg='{0} {1} not found'.format(resource_type, resource_name))
     except ForemanError as e:
-        module.fail_json(msg="Error while getting %s: %s" % (resource_type, e.message))
+        module.fail_json(msg='Error while getting {0}: {1}'.format(resource_type, e.message))
     return result
 
+
 def ensure(module):
-    changed = False
-    # Set parameters
     name = module.params['name']
     architecture_name = module.params[ARCHITECTURE]
     domain_name = module.params[DOMAIN]
@@ -30,21 +111,23 @@ def ensure(module):
     smart_proxy_name = module.params[SMART_PROXY]
     subnet_name = module.params[SUBNET]
     state = module.params['state']
+
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
     foreman_pass = module.params['foreman_pass']
+
     theforeman = Foreman(hostname=foreman_host,
                          port=foreman_port,
                          username=foreman_user,
                          password=foreman_pass)
-    data = {}
-    data['name'] = name
+
+    data = {'name': name}
 
     try:
         hostgroup = theforeman.search_hostgroup(data=data)
     except ForemanError as e:
-        module.fail_json(msg='Could not get hostgroup: ' + e.message)
+        module.fail_json(msg='Could not get hostgroup: {0}'.format(e.message))
 
     if not hostgroup and state == 'present':
         # Architecture
@@ -113,45 +196,48 @@ def ensure(module):
 
         try:
             theforeman.create_hostgroup(data=data)
-            changed = True
-        except ForemanError as e:
-            module.fail_json(msg='Could not create hostgroup: ' + e.message)
-
-    if hostgroup and state == 'absent':
-        try:
-            theforeman.delete_hostgroup(id=hostgroup.get('id'))
             return True
         except ForemanError as e:
-            module.fail_json(msg='Could not delete hostgroup: ' + e.message)
+            module.fail_json(msg='Could not create hostgroup: {0}'.format(e.message))
 
-    return changed
+    if hostgroup:
+        if state == 'absent':
+            try:
+                theforeman.delete_hostgroup(id=hostgroup.get('id'))
+                return True
+            except ForemanError as e:
+                module.fail_json(msg='Could not delete hostgroup: {0}'.format(e.message))
+
+    return False
+
 
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            name=dict(Type='str', required=True),
-            architecture=dict(Type='str'),
-            domain=dict(Type='str'),
-            environment=dict(Type='str'),
-            medium=dict(Type='str'),
-            operatingsystem=dict(Type='str'),
-            partition_table=dict(Type='str'),
-            smart_proxy=dict(Type='str'),
-            subnet=dict(Type='str'),
-            state=dict(Type='str', Default='present', choices=['present', 'absent']),
-            foreman_host=dict(Type='str', Default='127.0.0.1'),
-            foreman_port=dict(Type='str', Default='443'),
-            foreman_user=dict(Type='str', required=True),
-            foreman_pass=dict(Type='str', required=True)
+            name=dict(type='str', required=True),
+            architecture=dict(type='str', required=False),
+            domain=dict(type='str', required=False),
+            environment=dict(type='str', required=False),
+            medium=dict(type='str', required=False),
+            operatingsystem=dict(type='str', required=False),
+            partition_table=dict(type='str', required=False),
+            smart_proxy=dict(type='str', required=False),
+            subnet=dict(type='str', required=False),
+            state=dict(type='str', default='present', choices=['present', 'absent']),
+            foreman_host=dict(type='str', default='127.0.0.1'),
+            foreman_port=dict(type='str', default='443'),
+            foreman_user=dict(type='str', required=True),
+            foreman_pass=dict(type='str', required=True)
         ),
     )
 
     if not foremanclient_found:
-        module.fail_json(msg='python-foreman module is required')
+        module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
     changed = ensure(module)
     module.exit_json(changed=changed, name=module.params['name'])
 
 # import module snippets
 from ansible.module_utils.basic import *
+
 main()

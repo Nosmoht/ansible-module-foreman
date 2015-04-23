@@ -55,41 +55,43 @@ except ImportError:
 else:
     foremanclient_found = True
 
+
 def ensure(module):
-    changed = False
-    # Set parameters
     name = module.params['name']
     state = module.params['state']
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
     foreman_pass = module.params['foreman_pass']
+
     theforeman = Foreman(hostname=foreman_host,
                          port=foreman_port,
                          username=foreman_user,
                          password=foreman_pass)
-    data = {}
-    data['name'] = name
+
+    data = {'name': name}
 
     try:
         arch = theforeman.search_architecture(data=data)
     except ForemanError as e:
-        module.fail_json(msg='Could not get architecture: ' + e.message)
+        module.fail_json(msg='Could not get architecture: {0}'.format(e.message))
 
     if not arch and state == 'present':
         try:
             arch = theforeman.create_architecture(data)
-            changed = True
+            return True
         except ForemanError as e:
-            module.fail_json(msg='Could not create architecture: ' + e.message)
+            module.fail_json(msg='Could not create architecture: {0}'.format(e.message))
 
     if arch and state == 'absent':
         try:
             theforeman.delete_architecture(id=arch.get('id'))
-            changed = True
+            return True
         except ForemanError as e:
-            module.fail_json(msg='Could not delete architecture: ' + e.message)
-    return changed
+            module.fail_json(msg='Could not delete architecture: {0}'.format(e.message))
+
+    return False
+
 
 def main():
     module = AnsibleModule(
@@ -104,11 +106,12 @@ def main():
     )
 
     if not foremanclient_found:
-        module.fail_json(msg='python-foreman module is required')
+        module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
     changed = ensure(module)
     module.exit_json(changed=changed, name=module.params['name'])
 
 # import module snippets
 from ansible.module_utils.basic import *
+
 main()

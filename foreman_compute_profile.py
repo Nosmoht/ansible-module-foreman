@@ -55,11 +55,11 @@ except ImportError:
 else:
     foremanclient_found = True
 
+
 def ensure(module):
-    changed = False
-    # Set parameters
     name = module.params['name']
     state = module.params['state']
+
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
@@ -70,29 +70,30 @@ def ensure(module):
                          username=foreman_user,
                          password=foreman_pass)
 
-    data = {}
-    data['name'] = name
+    data = {'name': name}
 
     try:
         profile = theforeman.search_compute_profile(data=data)
     except ForemanError as e:
-        module.fail_json(msg='Could not get compute profile: ' + e.message)
+        module.fail_json(msg='Could not get compute profile: {0}'.format(e.message))
 
     if not profile and state == 'present':
         try:
             theforeman.create_compute_profile(data=data)
-            changed = True
+            return True
         except ForemanError as e:
-            module.fail_json(msg='Could not create compute profile: ' + e.message)
+            module.fail_json(msg='Could not create compute profile: {0}'.format(e.message))
 
-    if profile and state == 'absent':
-        try:
-            theforeman.delete_compute_profile(id=profile.get('id'))
-            changed = True
-        except ForemanError as e:
-            module.fail_json(msg='Could not delete compute profile: ' + e.message)
+    if profile:
+        if state == 'absent':
+            try:
+                theforeman.delete_compute_profile(id=profile.get('id'))
+                return True
+            except ForemanError as e:
+                module.fail_json(msg='Could not delete compute profile: {0}'.format(e.message))
 
-    return changed
+    return False
+
 
 def main():
     module = AnsibleModule(
@@ -114,4 +115,5 @@ def main():
 
 # import module snippets
 from ansible.module_utils.basic import *
+
 main()

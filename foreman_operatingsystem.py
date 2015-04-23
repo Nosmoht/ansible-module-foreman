@@ -49,8 +49,7 @@ def ensure(module):
             except ForemanError as e:
                 module.fail_json(msg='Could not delete operatingsystem: {0}'.format(e.message))
 
-        if os.get('description') != description or os.get('minor') != minor:
-            module.fail_json(msg=os)
+        if os.get('description') != description or os.get('major') != major or os.get('minor') != minor:
             try:
                 theforeman.update_operatingsystem(id=os.get('id'), data=data)
                 return True

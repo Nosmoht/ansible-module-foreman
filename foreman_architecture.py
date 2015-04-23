@@ -46,6 +46,8 @@ EXAMPLES = '''
     state: present
     foreman_user: admin
     foreman_pass: secret
+    foreman_host: foreman.example.com
+    foreman_port: 443
 '''
 
 try:
@@ -79,18 +81,18 @@ def ensure(module):
     if not arch and state == 'present':
         try:
             arch = theforeman.create_architecture(data)
-            return True
+            return True, arch
         except ForemanError as e:
             module.fail_json(msg='Could not create architecture: {0}'.format(e.message))
 
     if arch and state == 'absent':
         try:
             theforeman.delete_architecture(id=arch.get('id'))
-            return True
+            return True, None
         except ForemanError as e:
             module.fail_json(msg='Could not delete architecture: {0}'.format(e.message))
 
-    return False
+    return False, arch
 
 
 def main():
@@ -108,8 +110,8 @@ def main():
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
-    changed = ensure(module)
-    module.exit_json(changed=changed, name=module.params['name'])
+    changed, arch = ensure(module)
+    module.exit_json(changed=changed, architecture=arch)
 
 # import module snippets
 from ansible.module_utils.basic import *

@@ -9,16 +9,15 @@ short_description:
 description:
 - Create, update and and delete Foreman Operatingsystems using Foreman API v2
 options:
+  description:
+    description: OS description
+    required: false
+    default: null
   name:
     description: OS name
-    required: True
+    required: true
     default: null
     aliases: []
-  state:
-    description: OS state
-    required: False
-    default: 'present'
-    choices: ['present', 'absent']
   major:
     description: OS major version
     required: true
@@ -27,6 +26,15 @@ options:
     description: OS minor version
     required: false
     default: null
+  release_name:
+    description: Release name
+    required: false
+    default: null
+  state:
+    description: OS state
+    required: false
+    default: 'present'
+    choices: ['present', 'absent']
   foreman_host:
     description: Hostname or IP address of Foreman system
     required: false
@@ -72,9 +80,11 @@ except ImportError:
 
 def ensure(module):
     description = module.params['description']
+    family = module.params['family']
     major = module.params['major']
     minor = module.params['minor']
     name = module.params['name']
+    release_name = module.params['release_name']
     state = module.params['state']
 
     foreman_host = module.params['foreman_host']
@@ -95,8 +105,10 @@ def ensure(module):
         module.fail_json(msg='Could not get operatingsystem: {0}'.format(e.message))
 
     data['description'] = description
+    data['family'] = family
     data['major'] = major
     data['minor'] = minor
+    data['release_name'] = release_name
 
     if not os and state == 'present':
         try:
@@ -127,9 +139,11 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             description=dict(type='str', required=False),
+            family=dict(type='str', required=False),
             major=dict(type='str', required=True),
             minor=dict(type='str', required=False),
             name=dict(type='str', required=True),
+            release_name=dict(type='str', required=False),
             state=dict(type='str', default='present', choices=['present', 'absent']),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),

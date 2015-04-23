@@ -79,20 +79,20 @@ def ensure(module):
 
     if not profile and state == 'present':
         try:
-            theforeman.create_compute_profile(data=data)
-            return True
+            profile = theforeman.create_compute_profile(data=data)
+            return True, profile
         except ForemanError as e:
             module.fail_json(msg='Could not create compute profile: {0}'.format(e.message))
 
     if profile:
         if state == 'absent':
             try:
-                theforeman.delete_compute_profile(id=profile.get('id'))
-                return True
+                profile = theforeman.delete_compute_profile(id=profile.get('id'))
+                return True, profile
             except ForemanError as e:
                 module.fail_json(msg='Could not delete compute profile: {0}'.format(e.message))
 
-    return False
+    return False, profile
 
 
 def main():
@@ -108,10 +108,10 @@ def main():
     )
 
     if not foremanclient_found:
-        module.fail_json(msg='python-foreman module is required')
+        module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
-    changed = ensure(module)
-    module.exit_json(changed=changed, name=module.params['name'])
+    changed, profile = ensure(module)
+    module.exit_json(changed=changed, compute_profile=profile)
 
 # import module snippets
 from ansible.module_utils.basic import *

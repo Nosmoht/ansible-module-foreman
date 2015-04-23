@@ -195,20 +195,20 @@ def ensure(module):
             data['subnet_id'] = subnet.get('id')
 
         try:
-            theforeman.create_hostgroup(data=data)
-            return True
+            hostgroup = theforeman.create_hostgroup(data=data)
+            return True, hostgroup
         except ForemanError as e:
             module.fail_json(msg='Could not create hostgroup: {0}'.format(e.message))
 
     if hostgroup:
         if state == 'absent':
             try:
-                theforeman.delete_hostgroup(id=hostgroup.get('id'))
-                return True
+                hostgroup = theforeman.delete_hostgroup(id=hostgroup.get('id'))
+                return True, hostgroup
             except ForemanError as e:
                 module.fail_json(msg='Could not delete hostgroup: {0}'.format(e.message))
 
-    return False
+    return False, hostgroup
 
 
 def main():
@@ -234,8 +234,8 @@ def main():
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
-    changed = ensure(module)
-    module.exit_json(changed=changed, name=module.params['name'])
+    changed, hostgroup = ensure(module)
+    module.exit_json(changed=changed, hostgroup=hostgroup)
 
 # import module snippets
 from ansible.module_utils.basic import *

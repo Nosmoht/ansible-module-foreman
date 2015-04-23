@@ -100,27 +100,27 @@ def ensure(module):
 
     if not os and state == 'present':
         try:
-            theforeman.create_operatingsystem(data=data)
-            return True
+            os = theforeman.create_operatingsystem(data=data)
+            return True, os
         except ForemanError as e:
             module.fail_json(msg='Could not create operatingsystem: {0}'.format(e.message))
 
     if os:
         if state == 'absent':
             try:
-                theforeman.delete_operatingsystem(id=os.get('id'))
-                return True
+                os = theforeman.delete_operatingsystem(id=os.get('id'))
+                return True, os
             except ForemanError as e:
                 module.fail_json(msg='Could not delete operatingsystem: {0}'.format(e.message))
 
         if not all(data[key] == os.get(key, data[key]) for key in data):
             try:
-                theforeman.update_operatingsystem(id=os.get('id'), data=data)
-                return True
+                os = theforeman.update_operatingsystem(id=os.get('id'), data=data)
+                return True, os
             except ForemanError as e:
                 module.fail_json(msg='Could not update operatingsystem: {0}'.format(e.message))
 
-    return False
+    return False, os
 
 
 def main():
@@ -141,8 +141,8 @@ def main():
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
-    changed = ensure(module)
-    module.exit_json(changed=changed, name=module.params['name'])
+    changed, os = ensure(module)
+    module.exit_json(changed=changed, operatingsystem=os)
 
 # import module snippets
 from ansible.module_utils.basic import *

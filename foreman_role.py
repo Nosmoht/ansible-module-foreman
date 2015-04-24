@@ -81,19 +81,19 @@ def ensure(module):
     if not role and state == 'present':
         try:
             role = theforeman.create_role(data=data)
-            return True
+            return True, role
         except ForemanError as e:
             module.fail_json(msg='Could not create role: {0}'.format(e.message))
 
     if role:
         if state == 'absent':
             try:
-                theforeman.delete_role(id=role.get('id'))
-                return True
+                role = theforeman.delete_role(id=role.get('id'))
+                return True, role
             except ForemanError as e:
                 module.fail_json(msg='Could not delete role: {0}'.format(e.message))
 
-    return False
+    return False, role
 
 
 def main():
@@ -111,8 +111,8 @@ def main():
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
-    changed = ensure(module)
-    module.exit_json(changed=changed, name=module.params['name'])
+    changed, role = ensure(module)
+    module.exit_json(changed=changed, role=role)
 
 # import module snippets
 from ansible.module_utils.basic import *

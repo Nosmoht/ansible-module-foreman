@@ -136,7 +136,7 @@ def ensure(module):
                                         resource_type=ARCHITECTURE,
                                         resource_func=theforeman.search_architecture,
                                         resource_name=architecture_name)
-        data['architecture_id'] = architecture.get('id')
+            data['architecture_id'] = architecture.get('id')
 
         # Domain
         if domain_name:

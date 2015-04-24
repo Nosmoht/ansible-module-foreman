@@ -34,20 +34,20 @@ def ensure(module):
     if not smart_proxy and state == 'present':
         data['url'] = url
         try:
-            theforeman.create_smart_proxy(data=data)
-            return True
+            smart_proxy = theforeman.create_smart_proxy(data=data)
+            return True, smart_proxy
         except ForemanError as e:
             module.fail_json(msg='Could not create smart proxy: {0}'.format(e.message))
 
     if smart_proxy:
         if state == 'absent':
             try:
-                theforeman.delete_smart_proxy(id=smart_proxy.get('id'))
-                return True
+                smart_proxy = theforeman.delete_smart_proxy(id=smart_proxy.get('id'))
+                return True, smart_proxy
             except:
                 module.fail_json(msg='Could not delete smart proxy: {0}'.format(e.message))
 
-    return False
+    return False, smart_proxy
 
 
 def main():
@@ -66,8 +66,8 @@ def main():
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
-    changed = ensure(module)
-    module.exit_json(changed=changed, name=module.params['name'])
+    changed, smart_proxy = ensure(module)
+    module.exit_json(changed=changed, smart_proxy=smart_proxy)
 
 # import module snippets
 from ansible.module_utils.basic import *

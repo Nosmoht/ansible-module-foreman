@@ -179,8 +179,8 @@ def main():
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
-    changed = ensure(module)
-    module.exit_json(changed=changed, name=module.params['name'])
+    changed,compute_resource = ensure(module)
+    module.exit_json(changed=changed, compute_resource=compute_resource)
 
 # import module snippets
 from ansible.module_utils.basic import *

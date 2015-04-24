@@ -181,7 +181,7 @@ def ensure(module):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            admin=dict(type='bool', default=False, choices=BOOLEANS),
+            admin=dict(type='bool', default='false', choices=BOOLEANS),
             auth_source_name=dict(type='str', default='Internal', aliases=['auth']),
             login=dict(type='str', required=True, aliases=['name']),
             firstname=dict(type='str', required=False),

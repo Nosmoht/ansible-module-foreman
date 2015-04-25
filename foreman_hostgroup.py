@@ -91,10 +91,22 @@ else:
 
 
 def get_resource(module, resource_type, resource_func, resource_name):
+    """
+    Look for a resource within Foreman Database. Return the resource if found or fail.
+    If the Resource could not be found by name search by title.
+
+    :param module:
+    :param resource_type:
+    :param resource_func:
+    :param resource_name:
+    :return:
+    """
     try:
         result = resource_func(data={'name': resource_name})
         if not result:
-            module.fail_json(msg='{0} {1} not found'.format(resource_type, resource_name))
+            result = resource_func(data={'title': resource_name})
+            if not result:
+                module.fail_json(msg='{0} {1} not found'.format(resource_type, resource_name))
     except ForemanError as e:
         module.fail_json(msg='Error while getting {0}: {1}'.format(resource_type, e.message))
     return result

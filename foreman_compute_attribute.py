@@ -42,8 +42,7 @@ author: Thomas Krahn
 '''
 
 try:
-    from foreman import Foreman
-    from foreman.foreman import ForemanError
+    from foreman.foreman import *
 
     foremanclient_found = True
 except ImportError:
@@ -88,11 +87,11 @@ def ensure(module):
         compute_attribute = None
 
     if not compute_attribute:
-        data = {'compute_resource_id': compute_resource.get('id'), 'compute_profile_id': compute_profile.get('id'),
-                'vm_attrs': vm_attributes}
         try:
-            compute_attribute = theforeman.create_compute_attribute(data=data)
-            return True
+            compute_attribute = theforeman.create_compute_attribute(compute_resource_id=compute_resource.get('id'),
+                                                                    compute_profile_id=compute_profile.get('id'),
+                                                                    data={'vm_attrs': vm_attributes})
+            return True, compute_attribute
         except ForemanError as e:
             module.fail_json(msg='Could not create compute attribute: {0}'.format(e.message))
 
@@ -100,12 +99,13 @@ def ensure(module):
                vm_attributes) != 0:
         try:
             compute_attribute['vm_attrs'] = vm_attributes
-            theforeman.update_compute_attribute(id=compute_attribute.get('id'), data=compute_attribute)
-            return True
+            compute_attribute = theforeman.update_compute_attribute(id=compute_attribute.get('id'),
+                                                                    data=compute_attribute)
+            return True, compute_attribute
         except ForemanError as e:
             module.fail_json(msg='Could not update compute attribute: {0}'.format(e.message))
 
-    return False
+    return False, compute_attribute
 
 
 def main():
@@ -124,9 +124,8 @@ def main():
     if not foremanclient_found:
         module.fail_json(msg='python-foreman is required. See https://github.com/Nosmoht/python-foreman.')
 
-    changed = ensure(module)
-    module.exit_json(changed=changed,
-                     name='{0} - {1}'.format(module.params['compute_resource'], module.params['compute_profile']))
+    changed, compute_attribute = ensure(module)
+    module.exit_json(changed=changed, compute_attribute=compute_attribute)
 
 # import module snippets
 from ansible.module_utils.basic import *

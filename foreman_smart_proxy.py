@@ -10,6 +10,8 @@ except ImportError:
 
 
 def ensure(module):
+    updateable_keys = ['url']
+
     name = module.params['name']
     url = module.params['url']
     state = module.params['state']
@@ -31,8 +33,9 @@ def ensure(module):
     except ForemanError as e:
         module.fail_json(msg='Could not get smart proxy: {0}'.format(e.message))
 
+    data['url'] = url
+
     if not smart_proxy and state == 'present':
-        data['url'] = url
         try:
             smart_proxy = theforeman.create_smart_proxy(data=data)
             return True, smart_proxy
@@ -47,6 +50,12 @@ def ensure(module):
             except:
                 module.fail_json(msg='Could not delete smart proxy: {0}'.format(e.message))
 
+        if not all(data[key] == smart_proxy[key] for key in updateable_keys):
+            try:
+                smart_proxy = theforeman.update_smart_proxy(id=smart_proxy.get('id'), data=data)
+                return True, smart_proxy
+            except ForemanError as e:
+                module.fail_json(msg='Could not update smart proxy: {0}'.format(e.message))
     return False, smart_proxy
 
 

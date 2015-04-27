@@ -94,7 +94,7 @@ else:
     foremanclient_found = True
 
 
-def get_resource(module, resource_type, resource_func, resource_name):
+def get_resource(module, resource_type, resource_func, resource_name, search_title=False):
     """
     Look for a resource within Foreman Database. Return the resource if found or fail.
     If the Resource could not be found by name search by title.
@@ -106,11 +106,11 @@ def get_resource(module, resource_type, resource_func, resource_name):
     :return:
     """
     try:
-        result = resource_func(data={'name': resource_name})
+        result = resource_func(data=dict(name=resource_name))
+        if not result and search_title:
+            result = resource_func(data=dict(title=resource_name))
         if not result:
-            result = resource_func(data={'title': resource_name})
-            if not result:
-                module.fail_json(msg='{0} {1} not found'.format(resource_type, resource_name))
+            module.fail_json(msg='{0} {1} not found'.format(resource_type, resource_name))
     except ForemanError as e:
         module.fail_json(msg='Error while getting {0}: {1}'.format(resource_type, e.message))
     return result
@@ -198,7 +198,8 @@ def ensure(module):
         operatingsystem = get_resource(module=module,
                                        resource_type=OPERATINGSYSTEM,
                                        resource_func=theforeman.search_operatingsystem,
-                                       resource_name=operatingsystem_name)
+                                       resource_name=operatingsystem_name,
+                                       search_title=True)
         data['operatingsystem_id'] = operatingsystem.get('id')
 
     # Partition Table

@@ -18,6 +18,10 @@ options:
     description: Whether or not the template is locked for editing
     required: false
     default: false
+  operatingsystems:
+    description: List of Operatingsystem names the template is assigned to
+    required: false
+    default: []
   template:
     description: RAW template content
     required: false
@@ -62,6 +66,8 @@ EXAMPLES = '''
   foreman_config_template:
     name: CoreOS Cloud-config
     locked: false
+    operatingsystems:
+    - CoreOS
     template_file: /tmp/coreos-cloud-config
     snippet: true
     state: present
@@ -79,10 +85,41 @@ except ImportError:
     foremanclient_found = False
 
 
-def ensure(module):
-    updateable_keys = ['locked', 'snippet', 'template', 'template_kind']
+def dict_list_to_list(alist, key):
+    result = list()
+    if alist:
+        for item in alist:
+            result.append(item.get(key, None))
+    return result
+
+
+def equal_dict_lists(l1, l2, compare_key='name'):
+    s1 = set(dict_list_to_list(alist=l1, key=compare_key))
+    s2 = set(dict_list_to_list(alist=l2, key=compare_key))
+    return s1.issubset(s2) and s2.issubset(s1)
+
+
+def get_resources(resource_type, resource_func, resource_names):
+    result = []
+    for item in resource_names:
+        try:
+            resource = resource_func(data=dict(name=item))
+            if not resource:
+                module.fail_json(
+                    msg='Could not find resource type {resource_type} named {name}'.format(resource_type=resource_type,
+                                                                                           name=item))
+            result.append(dict(name=item, id=resource.get('id')))
+        except ForemanError as e:
+            module.fail_json(msg='Could not search resource type {resource_type} named {name}: {error}'.format(
+                resource_type=resource_type, name=item, error=e.message))
+    return result
+
+
+def ensure():
+    compareable_keys = ['locked', 'snippet', 'template']
     locked = module.params['locked']
     name = module.params['name']
+    operatingsystems = module.params['operatingsystems']
     state = module.params['state']
     snippet = module.params['snippet']
     template = module.params['template']
@@ -99,7 +136,7 @@ def ensure(module):
                          username=foreman_user,
                          password=foreman_pass)
 
-    data = {'name': name}
+    data = dict(name=name)
 
     try:
         config_template = theforeman.search_config_template(data=data)
@@ -107,6 +144,14 @@ def ensure(module):
             config_template = theforeman.get_config_template(id=config_template.get('id'))
     except ForemanError as e:
         module.fail_json(msg='Could not get config template: {0}'.format(e.message))
+
+    if state == 'absent':
+        if config_template:
+            try:
+                config_template = theforeman.delete_config_template(id=config_template.get('id'))
+                return True, config_template
+            except ForemanError as e:
+                module.fail_json(msg='Could not delete config template: {0}'.format(e.message))
 
     if state == 'present':
         if not template and not template_file:
@@ -125,6 +170,10 @@ def ensure(module):
         data['locked'] = locked
         data['snippet'] = snippet
         data['template_kind'] = template_kind
+        if not snippet:
+            data['operatingsystems'] = get_resources(resource_type='operatingsystem',
+                                                     resource_func=theforeman.search_operatingsystem,
+                                                     resource_names=operatingsystems)
 
         if not config_template:
             try:
@@ -133,29 +182,25 @@ def ensure(module):
             except ForemanError as e:
                 module.fail_json(msg='Could not create config template: {0}'.format(e.message))
 
-        if not all(data.get(key, None) == config_template.get(key, None) for key in updateable_keys):
+        if (not all(data.get(key, None) == config_template.get(key, None) for key in compareable_keys)) or (
+                not equal_dict_lists(l1=data.get('operatingsystems', None),
+                                     l2=config_template.get('operatingsystems', None))):
             try:
                 config_template = theforeman.update_config_template(id=config_template.get('id'), data=data)
                 return True, config_template
             except ForemanError as e:
                 module.fail_json(msg='Could not update config template: {0}'.format(e.message))
 
-    else:
-        if config_template:
-            try:
-                config_template = theforeman.delete_config_template(id=config_template.get('id'))
-                return True, config_template
-            except ForemanError as e:
-                module.fail_json(msg='Could not delete config template: {0}'.format(e.message))
-
     return False, config_template
 
 
 def main():
+    global module
     module = AnsibleModule(
         argument_spec=dict(
             name=dict(type='str', required=True),
             locked=dict(type='bool', default=False),
+            operatingsystems=dict(type='list', default=list()),
             template=dict(type='str', default=None),
             template_file=dict(type='str', default=None),
             template_kind=dict(type='str', default=None),
@@ -171,7 +216,7 @@ def main():
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
-    changed, config_template = ensure(module)
+    changed, config_template = ensure()
     module.exit_json(changed=changed, config_template=config_template)
 
 # import module snippets

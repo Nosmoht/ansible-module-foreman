@@ -2,7 +2,7 @@
 Ansible library to configure [Foreman] and manage hosts.
 
 # Requirements
-[python-foreman] >= 0.12.7 is required to be installed on the system where Ansible is started from.
+[python-foreman] >= 0.12.8 is required to be installed on the system where Ansible is started from.
 
 # Examples
 The following parameters are always required so the module knows how to connect to the Foreman [API v2].
@@ -97,6 +97,34 @@ This is an example to configure VMware vSphere attributes.
           thin: true
     ...
 ```
+## Config Template
+### Deploy existing file
+```
+- name: Ensure Config Template
+  foreman_config_template:
+    name: CoreOS Cloud-config
+    locked: false
+    operatingsystems:
+    - CoreOS
+    template_file: files/coreos-cloud-config
+    snippet: true
+    state: present
+    ...
+```
+### Deploy content file
+```
+- name: Ensure Config Template
+  foreman_config_template:
+    name: CoreOS Cloud-config
+    locked: false
+    operatingsystems:
+    - CoreOS
+    template: "Some content"
+    snippet: true
+    state: present
+...
+```
+
 ## Domain
 ```
 - name: Ensure Domain
@@ -207,9 +235,15 @@ or
 ```
 - name: Ensure Operatingsystem
   foreman_operatingsystem:
-    name: CentOS
-    major: 6
-    minor: 6
+    name: CoreOS
+    major: 633
+    minor: 0.0
+    architectures:
+    - x86_64
+    media:
+    - CoreOS mirror
+    partition_tables:
+    - CoreOS default fake
     state: present
   ...
 ```
@@ -247,12 +281,15 @@ Works only if Katello is used
 - name: Ensure User
   foreman_user:
     login: MyUser
+    admin: false
+    auth: 'Internal'
     firstname: Testing
     lastname: User
     mail: testing.user@example.com
     password: topsecret
-    admin: false
-    auth: 'Internal'
+    roles:
+    - Manager
+    - Viewer
     state: present
 ```
 

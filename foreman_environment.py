@@ -81,19 +81,19 @@ def ensure(module):
 
     if not env and state == 'present':
         try:
-            theforeman.create_environment(data=data)
-            return True
+            env = theforeman.create_environment(data=data)
+            return True, env
         except ForemanError as e:
             module.fail_json(msg='Could not create environment: {0}'.format(e.message))
 
     if env and state == 'absent':
         try:
-            theforeman.delete_environment(id=env.get('id'))
-            return True
+            env = theforeman.delete_environment(id=env.get('id'))
+            return True, env
         except ForemanError as e:
             module.fail_json(msg='Could not delete environment: {0}'.format(e.message))
 
-    return False
+    return False, env
 
 
 def main():
@@ -111,8 +111,8 @@ def main():
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
-    changed = ensure(module)
-    module.exit_json(changed=changed, name=module.params['name'])
+    changed, env = ensure(module)
+    module.exit_json(changed=changed, environment=env)
 
 # import module snippets
 from ansible.module_utils.basic import *

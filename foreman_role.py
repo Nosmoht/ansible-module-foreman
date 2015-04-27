@@ -3,21 +3,20 @@
 
 DOCUMENTATION = '''
 ---
-module: foreman_architecture
-short_description: Manage Foreman Architectures using Foreman API v2
+module: foreman_role
+short_description: Manage Foreman Role using Foreman API v2
 description:
-- Create and delete Foreman Architectures using Foreman API v2
+- Create, update and delete Foreman Role using Foreman API v2
 options:
   name:
-    description: Name of architecture
-    required: true
-    default: null
-    aliases: []
-  state:
-    description: State of architecture
+    description: Role name
     required: false
-    default: present
-    choices: ["present", "absent"]
+    default: null
+  state:
+    description: Role state
+    required: false
+    default: 'present'
+    choices: ['present', 'absent']
   foreman_host:
     description: Hostname or IP address of Foreman system
     required: false
@@ -40,27 +39,28 @@ author: Thomas Krahn
 '''
 
 EXAMPLES = '''
-- name: Ensure ARM Architecture is present
-  foreman_architecture:
-    name: ARM
+- name: Ensure Role
+  foreman_role:
+    name: MyRole
     state: present
-    foreman_user: admin
-    foreman_pass: secret
     foreman_host: foreman.example.com
     foreman_port: 443
+    foreman_user: admin
+    foreman_pass: secret
 '''
 
 try:
     from foreman.foreman import *
+
+    foremanclient_found = True
 except ImportError:
     foremanclient_found = False
-else:
-    foremanclient_found = True
 
 
 def ensure(module):
     name = module.params['name']
     state = module.params['state']
+
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
@@ -74,44 +74,45 @@ def ensure(module):
     data = {'name': name}
 
     try:
-        arch = theforeman.search_architecture(data=data)
+        role = theforeman.search_role(data=data)
     except ForemanError as e:
-        module.fail_json(msg='Could not get architecture: {0}'.format(e.message))
+        module.fail_json(msg='Could not get role: {0}'.format(e.message))
 
-    if not arch and state == 'present':
+    if not role and state == 'present':
         try:
-            arch = theforeman.create_architecture(data)
-            return True, arch
+            role = theforeman.create_role(data=data)
+            return True, role
         except ForemanError as e:
-            module.fail_json(msg='Could not create architecture: {0}'.format(e.message))
+            module.fail_json(msg='Could not create role: {0}'.format(e.message))
 
-    if arch and state == 'absent':
-        try:
-            theforeman.delete_architecture(id=arch.get('id'))
-            return True, None
-        except ForemanError as e:
-            module.fail_json(msg='Could not delete architecture: {0}'.format(e.message))
+    if role:
+        if state == 'absent':
+            try:
+                role = theforeman.delete_role(id=role.get('id'))
+                return True, role
+            except ForemanError as e:
+                module.fail_json(msg='Could not delete role: {0}'.format(e.message))
 
-    return False, arch
+    return False, role
 
 
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            name=dict(Type='str', required=True),
-            state=dict(Type='str', Default='present', choices=['present', 'absent']),
-            foreman_host=dict(Type='str', Default='127.0.0.1'),
-            foreman_port=dict(Type='str', Default='443'),
-            foreman_user=dict(Type='str', required=True),
-            foreman_pass=dict(Type='str', required=True)
+            name=dict(type='str', required=True),
+            state=dict(type='str', default='present', choices=['present', 'absent']),
+            foreman_host=dict(type='str', default='127.0.0.1'),
+            foreman_port=dict(type='str', default='443'),
+            foreman_user=dict(type='str', required=True),
+            foreman_pass=dict(type='str', required=True)
         ),
     )
 
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
-    changed, arch = ensure(module)
-    module.exit_json(changed=changed, architecture=arch)
+    changed, role = ensure(module)
+    module.exit_json(changed=changed, role=role)
 
 # import module snippets
 from ansible.module_utils.basic import *

@@ -144,27 +144,27 @@ def ensure(module):
 
     if not subnet and state == 'present':
         try:
-            theforeman.create_subnet(data=data)
-            return True
+            subnet = theforeman.create_subnet(data=data)
+            return True, subnet
         except ForemanError as e:
             module.fail_json(msg='Could not create subnet: {0}'.format(e.message))
 
     if subnet:
         if state == 'absent':
             try:
-                theforeman.delete_subnet(id=subnet.get('id'))
-                return True
+                subnet = theforeman.delete_subnet(id=subnet.get('id'))
+                return True, subnet
             except ForemanError as e:
                 module.fail_json(msg='Could not delete subnet: {0}'.format(e.message))
 
         if not all(data[key] == subnet[key] for key in data):
             try:
-                theforeman.update_subnet(id=subnet.get('id'), data=data)
-                return True
+                subnet = theforeman.update_subnet(id=subnet.get('id'), data=data)
+                return True, subnet
             except ForemanError as e:
                 module.fail_json(msg='Could not update subnet: {0}'.format(e.message))
 
-    return False
+    return False, subnet
 
 
 def main():
@@ -191,8 +191,8 @@ def main():
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
-    changed = ensure(module)
-    module.exit_json(changed=changed, name=module.params['name'])
+    changed, subnet = ensure(module)
+    module.exit_json(changed=changed, subnet=subnet)
 
 # import module snippets
 from ansible.module_utils.basic import *

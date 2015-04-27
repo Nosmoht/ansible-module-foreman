@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import operator
-
 DOCUMENTATION = '''
 ---
 module: foreman_user
@@ -12,37 +10,41 @@ description:
 options:
   admin:
     description: Is an admin account
-    required: False
-    default: 'false'
-    choices: ['true','false']
+    required: false
+    default: False
+    choices: [True, False]
   auth:
     description: Authorization method
-    required: False
+    required: false
     default: 'Internal'
   login:
     description: Name of architecture
-    required: True
+    required: true
     default: null
     aliases: ['name']
   firstname:
     description: User's firstname
-    required: False
+    required: false
     default: null
   lastname:
     description: User's lastname
-    required: False
+    required: false
     default: null
   mail:
     description: Mail address
-    required: False
+    required: false
     default: null
   password:
     description: Password
-    required: False
+    required: false
+    default: null
+  roles:
+    description: Roles assigned to the user
+    required: false
     default: null
   state:
     description: State of architecture
-    required: False
+    required: false
     default: present
     choices: ["present", "absent"]
   foreman_host:
@@ -83,14 +85,43 @@ except ImportError:
     foremanclient_found = False
 
 
+def get_roles(module, theforeman, roles):
+    result = list()
+    for item in roles:
+        try:
+            role = theforeman.search_role(data={'name': item})
+            if not role:
+                module.fail_json(msg='Could not find role {0}'.format(item))
+            result.append(dict(name=item, id=role.get('id')))
+        except ForemanError as e:
+            module.fail_json(msg='Could not search role {0}: {1}'.format(item, e.message))
+    return result
+
+
+def extract_key_value_from_dict_array(a, key):
+    result = list()
+    for d in a:
+        result.append(d.get(key, None))
+    return result
+
+
+def equal_roles(assigned_roles, defined_roles):
+    ar = set(extract_key_value_from_dict_array(assigned_roles, 'name'))
+    dr = set(extract_key_value_from_dict_array(defined_roles, 'name'))
+    return ar.issubset(dr) and dr.issubset(ar)
+
+
 def ensure(module):
     login = module.params['login']
     state = module.params['state']
+    roles = module.params['roles']
 
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
     foreman_pass = module.params['foreman_pass']
+
+    user_options = ['admin', 'auth_source_name', 'firstname', 'lastname', 'mail']
 
     theforeman = Foreman(hostname=foreman_host,
                          port=foreman_port,
@@ -100,43 +131,57 @@ def ensure(module):
     data = {'login': login}
 
     try:
-        user = theforeman.search_user(data=data)
+        # Search the user. If it does exist get detailed information
+        found = theforeman.search_user(data=data)
+        if found:
+            user = theforeman.get_user(id=found.get('id'))
+        else:
+            user = None
     except ForemanError as e:
         module.fail_json(msg='Could not get user: {0}'.format(e.message))
 
-    for key in ['admin', 'auth_source_name', 'firstname', 'lastname', 'mail', 'password']:
+    # Compare assigned values. password is not returned by Foreman and must be handled different
+    for key in user_options:
         if key in module.params:
             data[key] = module.params[key]
 
+    if roles:
+        data['roles'] = get_roles(module, theforeman, roles)
+    else:
+        data['roles'] = []
+
     if not user and state == 'present':
         try:
+            data['password'] = module.params['password']
             user = theforeman.create_user(data=data)
-            return True
+            return True, user
         except ForemanError as e:
             module.fail_json(msg='Could not create user: {0}'.format(e.message))
 
     if user:
         if state == 'absent':
             try:
-                theforeman.delete_user(id=user.get('id'))
-                return True
+                user, theforeman.delete_user(id=user.get('id'))
+                return True, user
             except ForemanError as e:
                 module.fail_json(msg='Could not delete user: {0}'.format(e.message))
 
-        if not all(user.get(key, data[key]) == data[key] for key in data):
+        if (not all(user.get(key, data[key]) == data[key] for key in user_options)) or (
+                not equal_roles(defined_roles=data.get('roles'), assigned_roles=user.get('roles'))):
             try:
-                theforeman.update_user(id=user.get('id'), data=data)
-                return True
+                # module.fail_json(msg='{0}\n{1}'.format(user.get('roles'), data.get('roles')))
+                user = theforeman.update_user(id=user.get('id'), data=data)
+                return True, user
             except ForemanError as e:
                 module.fail_json(msg='Could not update user: {0}'.format(e.message))
 
-    return False
+    return False, user
 
 
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            admin=dict(type='bool', default=False, choices=BOOLEANS),
+            admin=dict(type='bool', default='false', choices=BOOLEANS),
             auth_source_name=dict(type='str', default='Internal', aliases=['auth']),
             login=dict(type='str', required=True, aliases=['name']),
             firstname=dict(type='str', required=False),
@@ -144,6 +189,7 @@ def main():
             mail=dict(type='str', required=False),
             state=dict(type='str', default='present', choices=['present', 'absent']),
             password=dict(type='str', required=False),
+            roles=dict(type='list', required=False),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),
             foreman_user=dict(type='str', required=True),
@@ -154,8 +200,8 @@ def main():
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
-    changed = ensure(module)
-    module.exit_json(changed=changed, name=module.params['name'])
+    changed, user = ensure(module)
+    module.exit_json(changed=changed, user=user)
 
 # import module snippets
 from ansible.module_utils.basic import *

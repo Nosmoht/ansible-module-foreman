@@ -115,7 +115,7 @@ def ensure(module):
     if provider:
         provider_params = get_required_provider_params(provider)
         for param in provider_params:
-            if param in not module.params:
+            if not param in module.params:
                 module.fail_json(msg='Parameter {0} must be defined for provide {1}'.format(param, provider))
 
     foreman_host = module.params['foreman_host']
@@ -131,30 +131,30 @@ def ensure(module):
     data = {'name': name}
 
     try:
-        resource = theforeman.search_compute_resource(data=data)
+        compute_resource = theforeman.search_compute_resource(data=data)
     except ForemanError as e:
         module.fail_json(msg='Could not get compute resource: {0}'.format(e.message))
 
-    if not resource and state == 'present':
+    if not compute_resource and state == 'present':
         data['provider'] = provider
         for param in provider_params:
             data[param] = module.params[param]
 
         try:
-            theforeman.create_compute_resource(data=data)
-            return True
+            compute_resource = theforeman.create_compute_resource(data=data)
+            return True, compute_resource
         except ForemanError as e:
             module.fail_json(msg='Could not create compute resource: {0}'.format(e.message))
 
-    if resource:
+    if compute_resource:
         if state == 'absent':
             try:
-                theforeman.delete_compute_resource(id=resource.get('id'))
-                return True
+                compute_resource = theforeman.delete_compute_resource(id=resource.get('id'))
+                return True, compute_resource
             except ForemanError as e:
                 module.fail_json(msg='Could not delete compute resource: {0}'.format(e.message))
 
-    return False
+    return False, compute_resource
 
 
 def main():
@@ -179,8 +179,8 @@ def main():
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
-    changed = ensure(module)
-    module.exit_json(changed=changed, name=module.params['name'])
+    changed,compute_resource = ensure(module)
+    module.exit_json(changed=changed, compute_resource=compute_resource)
 
 # import module snippets
 from ansible.module_utils.basic import *

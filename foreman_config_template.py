@@ -100,7 +100,9 @@ def equal_dict_lists(l1, l2, compare_key='name'):
 
 
 def get_resources(resource_type, resource_func, resource_names):
-    result = []
+    result = list()
+    if not resource_names:
+        return result
     for item in resource_names:
         try:
             resource = resource_func(data=dict(name=item))

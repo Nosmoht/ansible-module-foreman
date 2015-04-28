@@ -303,7 +303,10 @@ def ensure():
 
     # Parameters
     if parameters:
-        host_parameters = theforeman.get_host_parameters(host_id=host_id)
+        try:
+            host_parameters = theforeman.get_host_parameters(host_id=host_id)
+        except ForemanError as e:
+            module.fail_json(msg='Could not get host parameters: {0}'.format(e.message))
 
         for param in parameters:
             host_params = [item for item in host_parameters if item.get('name') == param.get('name')]

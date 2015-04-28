@@ -4,18 +4,83 @@
 DOCUMENTATION = '''
 ---
 module: foreman_host
-short_description: Create and delete hosts with Foreman using Foreman API v2
+short_description: Create, update and delete hosts with Foreman using Foreman API v2
 description:
 - Create and delete hosts using Foreman API v2
 options:
+  name:
+    description: Hostgroup name
+    required: false
+    default: None
+  architecture:
+    description: Architecture name
+    required: false
+    default: x86_64
+  build:
+    description: Boolean to define if host should be builded
+    required: false
+    default: false
+  compute_profile:
+    description: Compute Profile name
+    required: false
+    default: None
+  compute_resource:
+    description: Compute Resource name
+    required: false
+    default: None
+  domain:
+    description: Domain name
+    required: false
+    default: None
   enabled:
     description: Host enabled
     required: false
     choices: BOOLEANS
+  environment:
+    description: Name of environment used by default
+    required: false
+    default: None
+  hostgroup:
+    description: Hostgroup name
+    required: false
+    default: None
+  image:
+    description: Image name to be used if creating from image
+    required: false
+    default: None
+  location:
+    description: Location name (Only useful with Katello)
+    required: false
+    default: None
   managed:
     description: Should Foreman manage the host
     required: false
-    default: null
+    default: false
+  medium:
+    description: Medium name
+    required: false
+    default: None
+  operatingsystem:
+    descrtiption: Operatingsystem name
+    required: false
+    default: None
+  organization:
+    description: Organization name (only useful with Katello)
+    required: false
+    default: None
+  parameters:
+    description: List of parameters and values
+    required: false
+    default: None
+  provision_method:
+    description: How to provision the host
+    required: false
+    default: None
+    choices: ['build', 'image']
+  root_pass:
+    description: root password
+    required: false
+    default: None
   subnet:
     description: Name of subnet to use for this host
     required: false

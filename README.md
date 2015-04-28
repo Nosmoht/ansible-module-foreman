@@ -111,7 +111,7 @@ This is an example to configure VMware vSphere attributes.
     state: present
     ...
 ```
-### Deploy content file
+### Deploy content
 ```
 - name: Ensure Config Template
   foreman_config_template:
@@ -246,6 +246,17 @@ or
     - CoreOS default fake
     state: present
   ...
+```
+
+## Operatingsystem default template
+```
+- name: Ensure Operatingsystem default template
+  foreman_os_default_template:
+    operatingsystem: CoreOS
+    config_template: CoreOS PXELinux
+    template_kind: PXELinux
+    state: present
+    ...
 ```
 
 ## Organization

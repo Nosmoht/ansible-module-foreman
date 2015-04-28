@@ -212,10 +212,10 @@ def ensure(module):
 
     # Smart Proxy
     if smart_proxy_name:
-        partition_table = get_resource(module=module,
-                                       resource_type=SMART_PROXY,
-                                       resource_func=theforeman.search_smart_proxy,
-                                       resource_name=smart_proxy_name)
+        smart_proxy = get_resource(module=module,
+                                   resource_type=SMART_PROXY,
+                                   resource_func=theforeman.search_smart_proxy,
+                                   resource_name=smart_proxy_name)
         data['puppet_proxy_id'] = smart_proxy.get('id')
 
     # Subnet

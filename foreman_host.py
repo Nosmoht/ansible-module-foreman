@@ -126,7 +126,7 @@ def get_resource(resource_type, resource_func, resource_name):
     return result
 
 
-def ensure(module):
+def ensure():
     changed = False
     name = module.params['name']
     architecture_name = module.params[ARCHITECTURE]

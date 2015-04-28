@@ -161,7 +161,7 @@ def ensure():
     if domain_name in name:
         host_name = name
     else:
-        host_name = name + '.' + domain_name
+        host_name = '{name}.{domain}'.format(name=name, domain=domain_name)
 
     data = dict(name=host_name)
 

@@ -120,9 +120,9 @@ def ensure(module):
     # Changes in one of the following keys fails with:
     # <key> is not allowed as nested parameter for hostgroups. Allowed parameters are puppetclass_id, location_id, organization_id
     # Strange as for example the Compute Profile can be changed via UI
-    hostgroup_nonupdateable_keys = ['compute_profile_id', 'environment_id', 'medium_id', 'operatingsystem_id',
-                                    'subnet_id']
-    hostgroup_updateable_keys = ['architecture_id', 'domain_id', 'ptable_id', 'smart_proxy_id']
+    hostgroup_nonupdateable_keys = ['architecture_id', 'compute_profile_id', 'domain_id', 'environment_id',
+                                    'medium_id', 'operatingsystem_id', 'subnet_id', 'ptable_id', 'smart_proxy_id']
+    hostgroup_updateable_keys = ['puppetclass_id', 'location_id', 'organization_id']
 
     name = module.params['name']
     architecture_name = module.params[ARCHITECTURE]

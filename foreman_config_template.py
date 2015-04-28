@@ -13,7 +13,7 @@ options:
     description: Provision template name
     required: true
     default: null
-    aliases: []
+    aliases: None
   locked:
     description: Whether or not the template is locked for editing
     required: false
@@ -21,7 +21,7 @@ options:
   operatingsystems:
     description: List of Operatingsystem names the template is assigned to
     required: false
-    default: []
+    default: None
   template:
     description: RAW template content
     required: false
@@ -200,7 +200,7 @@ def main():
         argument_spec=dict(
             name=dict(type='str', required=True),
             locked=dict(type='bool', default=False),
-            operatingsystems=dict(type='list', default=list()),
+            operatingsystems=dict(type='list', default=None),
             template=dict(type='str', default=None),
             template_file=dict(type='str', default=None),
             template_kind=dict(type='str', default=None),

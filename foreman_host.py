@@ -376,7 +376,7 @@ def main():
             medium=dict(type='str', default=None),
             operatingsystem=dict(type='str', default=None),
             organization=dict(type='str', default=None),
-            parameters=dict(type='str', default=None),
+            parameters=dict(type='list', default=None),
             provision_method=dict(type='str', required=False, choices=['build', 'image']),
             root_pass=dict(type='str', default=None),
             state=dict(type='str', default='present',

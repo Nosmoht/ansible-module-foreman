@@ -120,9 +120,9 @@ def ensure(module):
     # Changes in one of the following keys fails with:
     # <key> is not allowed as nested parameter for hostgroups. Allowed parameters are puppetclass_id, location_id, organization_id
     # Strange as for example the Compute Profile can be changed via UI
-    hostgroup_nonupdateable_keys = ['compute_profile_id', 'environment_id', 'medium_id', 'operatingsystem_id',
-                                    'subnet_id']
-    hostgroup_updateable_keys = ['architecture_id', 'domain_id', 'ptable_id', 'smart_proxy_id']
+    hostgroup_nonupdateable_keys = ['architecture_id', 'compute_profile_id', 'domain_id', 'environment_id',
+                                    'medium_id', 'operatingsystem_id', 'subnet_id', 'ptable_id', 'smart_proxy_id']
+    hostgroup_updateable_keys = ['puppetclass_id', 'location_id', 'organization_id']
 
     name = module.params['name']
     architecture_name = module.params[ARCHITECTURE]
@@ -212,10 +212,10 @@ def ensure(module):
 
     # Smart Proxy
     if smart_proxy_name:
-        partition_table = get_resource(module=module,
-                                       resource_type=SMART_PROXY,
-                                       resource_func=theforeman.search_smart_proxy,
-                                       resource_name=smart_proxy_name)
+        smart_proxy = get_resource(module=module,
+                                   resource_type=SMART_PROXY,
+                                   resource_func=theforeman.search_smart_proxy,
+                                   resource_name=smart_proxy_name)
         data['puppet_proxy_id'] = smart_proxy.get('id')
 
     # Subnet
@@ -257,15 +257,15 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             name=dict(type='str', required=True),
-            architecture=dict(type='str', required=False),
+            architecture=dict(type='str', default=None),
             compute_profile=dict(type='str', default=None),
-            domain=dict(type='str', required=False),
-            environment=dict(type='str', required=False),
-            medium=dict(type='str', required=False),
-            operatingsystem=dict(type='str', required=False),
-            partition_table=dict(type='str', required=False),
-            smart_proxy=dict(type='str', required=False),
-            subnet=dict(type='str', required=False),
+            domain=dict(type='str', default=None),
+            environment=dict(type='str', default=None),
+            medium=dict(type='str', default=None),
+            operatingsystem=dict(type='str', default=None),
+            partition_table=dict(type='str', default=None),
+            smart_proxy=dict(type='str', default=None),
+            subnet=dict(type='str', default=None),
             state=dict(type='str', default='present', choices=['present', 'absent']),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),

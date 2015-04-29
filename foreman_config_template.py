@@ -13,7 +13,7 @@ options:
     description: Provision template name
     required: true
     default: null
-    aliases: []
+    aliases: None
   locked:
     description: Whether or not the template is locked for editing
     required: false
@@ -21,7 +21,7 @@ options:
   operatingsystems:
     description: List of Operatingsystem names the template is assigned to
     required: false
-    default: []
+    default: None
   template:
     description: RAW template content
     required: false
@@ -100,7 +100,9 @@ def equal_dict_lists(l1, l2, compare_key='name'):
 
 
 def get_resources(resource_type, resource_func, resource_names):
-    result = []
+    result = list()
+    if not resource_names:
+        return result
     for item in resource_names:
         try:
             resource = resource_func(data=dict(name=item))
@@ -200,7 +202,7 @@ def main():
         argument_spec=dict(
             name=dict(type='str', required=True),
             locked=dict(type='bool', default=False),
-            operatingsystems=dict(type='list', default=list()),
+            operatingsystems=dict(type='list', default=None),
             template=dict(type='str', default=None),
             template_file=dict(type='str', default=None),
             template_kind=dict(type='str', default=None),

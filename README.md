@@ -1,6 +1,23 @@
 # ansible-library-foreman
 Ansible library to configure [Foreman] and manage hosts.
 
+With the current implementation it's possible to create, update and delete the following Foreman Resources
+- Architectures
+- Compute Attributes
+- Compute Profiles
+- Compute Resources
+- Config Templates
+- Domain
+- Environments
+- Locations (needs Katello)
+- Hosts
+- Hostgroups
+- Operatingsystems
+- Organizations (need s Katello)
+- Roles
+- Smart Procies
+- Users
+
 # Requirements
 [python-foreman] >= 0.12.8 is required to be installed on the system where Ansible is started from.
 

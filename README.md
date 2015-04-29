@@ -9,13 +9,16 @@ With the current implementation it's possible to create, update and delete the f
 - Config Templates
 - Domain
 - Environments
-- Locations (needs Katello)
 - Hosts
 - Hostgroups
+- Locations (needs Katello)
+- Medium
 - Operatingsystems
+- Operatingsystem default templates
 - Organizations (need s Katello)
 - Roles
 - Smart Procies
+- Subnets
 - Users
 
 # Requirements

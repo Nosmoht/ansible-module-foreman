@@ -1,6 +1,26 @@
 # ansible-library-foreman
 Ansible library to configure [Foreman] and manage hosts.
 
+With the current implementation it's possible to create, update and delete the following Foreman Resources
+- Architectures
+- Compute Attributes
+- Compute Profiles
+- Compute Resources
+- Config Templates
+- Domain
+- Environments
+- Hosts
+- Hostgroups
+- Locations (needs Katello)
+- Medium
+- Operatingsystems
+- Operatingsystem default templates
+- Organizations (need s Katello)
+- Roles
+- Smart Procies
+- Subnets
+- Users
+
 # Requirements
 [python-foreman] >= 0.12.8 is required to be installed on the system where Ansible is started from.
 
@@ -111,7 +131,7 @@ This is an example to configure VMware vSphere attributes.
     state: present
     ...
 ```
-### Deploy content file
+### Deploy content
 ```
 - name: Ensure Config Template
   foreman_config_template:
@@ -142,43 +162,43 @@ This is an example to configure VMware vSphere attributes.
     ...
 ```
 ## Host
-### Provision by Medium
+### Provision using installation from medium
 ```
 - name: Ensure Host
   foreman_host:
     name: ansible-host-01
     state: running
     architecture: x86_64
-    compute_profile: 1-Small
-    compute_resource: VMwareCluster01
     domain: example.com
-    environment: Production
-    hostgroup: Hostgroup01
-    location: Somewhere
-    operatingsystem: CoreOS
-    organization: Example Org.
-    medium: CoreOS Medium
-    ...
+    environment: production
+    medium: CoreOS
+    provision_method: build
+    root_pass: topsecret
 ```
-### Provision by Image
+### Provision by clone from image
 ```
 - name: Ensure Host
   foreman_host:
-    name: ansible-host-01
+    name: ansible-host-03
     state: running
-    architecture: x86_64
-    compute_profile: 1-Small
     compute_resource: VMwareCluster01
-    domain: example.com
-    environment: Production
     hostgroup: Hostgroup01
     image: CoreOS Image
-    location: Somewhere
-    operatingsystem: CoreOS
-    organization: Example Org.
+    provision_method: image
 ...
 ```
-## Delete host
+### Provision using a hostgroup
+```
+- name: Ensure Host
+  foreman_host:
+    name: ansible-host-02
+    state: running
+    compute_resource: VMwareCluster01
+    hostgroup: Hostgroup01
+    provision_method: build
+    ...
+```
+### Delete host
 To delete a host Foreman must know the FQDN. Use one of the following methods:
 ```
 - name: Ensure absent host
@@ -246,6 +266,17 @@ or
     - CoreOS default fake
     state: present
   ...
+```
+
+## Operatingsystem default template
+```
+- name: Ensure Operatingsystem default template
+  foreman_os_default_template:
+    operatingsystem: CoreOS
+    config_template: CoreOS PXELinux
+    template_kind: PXELinux
+    state: present
+    ...
 ```
 
 ## Organization

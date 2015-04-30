@@ -122,45 +122,27 @@ def get_resources(resource_type, resource_func, resource_names):
     return result
 
 
-def get_architectures(theforeman, architectures):
+def get_architectures(architectures):
     return get_resources(resource_type='architecture',
                          resource_func=theforeman.search_architecture, resource_names=architectures)
 
 
-def get_media(theforeman, media):
+def get_media(media):
     return get_resources(resource_type='medium',
                          resource_func=theforeman.search_medium, resource_names=media)
 
 
-def get_partition_tables(theforeman, partition_tables):
+def get_partition_tables(partition_tables):
     return get_resources(resource_type='partition table',
                          resource_func=theforeman.search_partition_table, resource_names=partition_tables)
 
 
 def ensure():
     comparable_keys = ['description', 'family', 'major', 'minor', 'release_name']
-    architectures = module.params['architectures']
-    description = module.params['description']
-    family = module.params['family']
-    major = module.params['major']
-    media = module.params['media']
-    minor = module.params['minor']
     name = module.params['name']
-    partition_tables = module.params['partition_tables']
-    release_name = module.params['release_name']
     state = module.params['state']
 
-    foreman_host = module.params['foreman_host']
-    foreman_port = module.params['foreman_port']
-    foreman_user = module.params['foreman_user']
-    foreman_pass = module.params['foreman_pass']
-
-    theforeman = Foreman(hostname=foreman_host,
-                         port=foreman_port,
-                         username=foreman_user,
-                         password=foreman_pass)
-
-    data = {'name': name}
+    data = dict(name=name)
 
     try:
         os = theforeman.search_operatingsystem(data=data)
@@ -179,14 +161,15 @@ def ensure():
 
         return False, os
 
-    data['architectures'] = get_architectures(theforeman=theforeman, architectures=architectures)
-    data['description'] = description
-    data['family'] = family
-    data['major'] = major
-    data['minor'] = minor
-    data['media'] = get_media(theforeman=theforeman, media=media)
-    data['ptables'] = get_partition_tables(theforeman=theforeman, partition_tables=partition_tables)
-    data['release_name'] = release_name
+    data['architectures'] = get_architectures(architectures=module.params['architectures'])
+    data['description'] = module.params['description']
+    data['family'] = module.params['family']
+    data['major'] = module.params['major']
+    data['minor'] = module.params['minor']
+    data['media'] = get_media(media=module.params['media'])
+
+    data['ptables'] = get_partition_tables(partition_tables=module.params['partition_tables'])
+    data['release_name'] = module.params['release_name']
 
     if not os:
         try:
@@ -210,16 +193,18 @@ def ensure():
 
 def main():
     global module
+    global theforeman
+
     module = AnsibleModule(
         argument_spec=dict(
-            architectures=dict(type='list', default=list()),
+            architectures=dict(type='list', default=None),
             description=dict(type='str', default=None),
             family=dict(type='str', default=None),
             major=dict(type='str', required=True),
-            media=dict(type='list', default=list()),
+            media=dict(type='list', default=None),
             minor=dict(type='str', default=None),
             name=dict(type='str', required=True),
-            partition_tables=dict(type='list', default=list()),
+            partition_tables=dict(type='list', default=None),
             release_name=dict(type='str', default=None),
             state=dict(type='str', default='present', choices=['present', 'absent']),
             foreman_host=dict(type='str', default='127.0.0.1'),
@@ -231,6 +216,16 @@ def main():
 
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
+
+    foreman_host = module.params['foreman_host']
+    foreman_port = module.params['foreman_port']
+    foreman_user = module.params['foreman_user']
+    foreman_pass = module.params['foreman_pass']
+
+    theforeman = Foreman(hostname=foreman_host,
+                         port=foreman_port,
+                         username=foreman_user,
+                         password=foreman_pass)
 
     changed, os = ensure()
     module.exit_json(changed=changed, operatingsystem=os)

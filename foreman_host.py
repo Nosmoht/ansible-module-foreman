@@ -321,15 +321,19 @@ def ensure():
                         msg='Could not create host parameter {param_name}: {error}'.format(param_name=param.get('name'),
                                                                                            error=e.message))
                 changed = True
-            elif host_params[0]['value'] != param.get('value'):
-                try:
-                    theforeman.update_host_parameter(host_id=host_id, parameter_id=host_params[0].get('id'),
-                                                     data=param)
-                except ForemanError as e:
-                    module.fail_json(
-                        msg='Could not update host parameter {param_name}: {error}'.format(param_name=param.get('name'),
-                                                                                           error=e.message))
-                changed = True
+            else:
+                for host_param in host_params:
+                    # Replace \n sems to be needed. Otherwise some strings are always changed evenso they look equal
+                    if host_param.get('value').replace('\n', '') != param.get('value').replace('\n', ''):
+                        try:
+                            theforeman.update_host_parameter(host_id=host_id,
+                                                             parameter_id=host_param.get('id'),
+                                                             data=param)
+                        except ForemanError as e:
+                            module.fail_json(
+                                msg='Could not update host parameter {param_name}: {error}'.format(
+                                    param_name=param.get('name'), error=e.message))
+                        changed = True
 
     try:
         host_power = theforeman.get_host_power(host_id=host_id)

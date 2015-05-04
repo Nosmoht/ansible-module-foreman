@@ -158,10 +158,13 @@ def ensure():
                          username=foreman_user,
                          password=foreman_pass)
 
-    if domain_name in name:
-        host_name = name
+    if domain_name:
+        if domain_name in name:
+            host_name = name
+        else:
+            host_name = '{name}.{domain}'.format(name=name, domain=domain_name)
     else:
-        host_name = '{name}.{domain}'.format(name=name, domain=domain_name)
+        host_name = name
 
     data = dict(name=host_name)
 

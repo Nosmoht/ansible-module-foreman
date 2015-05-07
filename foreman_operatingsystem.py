@@ -3,7 +3,7 @@
 
 DOCUMENTATION = '''
 ---
-module: foreman_location
+module: foreman_operatingsystem
 short_description:
 - Manage Foreman Operatingsystems using Foreman API v2.
 description:

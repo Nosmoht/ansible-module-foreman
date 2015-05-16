@@ -31,6 +31,8 @@ def ensure(module):
     except ForemanError as e:
         module.fail_json(msg='Could not get medium: {0}'.format(e.message))
 
+    data['path'] = path
+
     if not medium and state == 'present':
         try:
             theforeman.create_medium(data=data)

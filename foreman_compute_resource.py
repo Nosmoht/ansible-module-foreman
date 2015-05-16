@@ -97,7 +97,9 @@ else:
 def get_required_provider_params(provider):
     provider_name = provider.lower()
 
-    if provider_name == 'ec2':
+    if provider_name == 'docker':
+        return ['password', 'url', 'user']
+    elif provider_name == 'ec2':
         return ['user', 'password']
     elif provider_name in ['libvirt', 'ovirt']:
         return ['url', 'user', 'password']

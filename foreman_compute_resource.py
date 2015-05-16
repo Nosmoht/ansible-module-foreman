@@ -105,6 +105,8 @@ def get_required_provider_params(provider):
         return ['url', 'user', 'password', 'tenant']
     elif provider_name == 'vmware':
         return ['datacenter', 'user', 'password', 'server']
+    else:
+        return []
 
 
 def ensure(module):
@@ -114,6 +116,8 @@ def ensure(module):
 
     if provider:
         provider_params = get_required_provider_params(provider)
+        if not provider_params:
+            module.fail_json('Provider {provider} not supported'.format(provider))
         for param in provider_params:
             if not param in module.params:
                 module.fail_json(msg='Parameter {0} must be defined for provide {1}'.format(param, provider))
@@ -179,7 +183,7 @@ def main():
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
-    changed,compute_resource = ensure(module)
+    changed, compute_resource = ensure(module)
     module.exit_json(changed=changed, compute_resource=compute_resource)
 
 # import module snippets

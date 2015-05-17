@@ -16,26 +16,28 @@ With the current implementation it's possible to create, update and delete the f
 - Operatingsystems
 - Operatingsystem default templates
 - Organizations (need s Katello)
+- Partition Tables
 - Roles
 - Smart Procies
 - Subnets
 - Users
 
 # Requirements
-[python-foreman] >= 0.12.8 is required to be installed on the system where Ansible is started from.
+[python-foreman] >= 0.13.1 is required to be installed on the system where Ansible is started from.
 
 # Examples
 The following parameters are always required so the module knows how to connect to the Foreman [API v2].
 The are replaced in the examples by three dots (...).
 
-```
+```yaml
 foreman_host: foreman.example.com
 foreman_port: 443
 foreman_user: admin
 foreman_pass: password
 ```
+
 ## Architecture
-```
+```yaml
 - name: Ensure Architecture
   foreman_architecture:
     name: x86_64
@@ -45,9 +47,9 @@ foreman_pass: password
     foreman_user: admin
     foreman_pass: password
 ```
-## Compute Profile
 
-```
+## Compute Profile
+```yaml
 - name: Ensure Compute Profile
   foreman_compute_profile:
     name: 1-Small
@@ -58,7 +60,7 @@ foreman_pass: password
 ```
 
 ## Compute Resource
-```
+```yaml
 - name: Ensure Compute Resource
   foreman_compute_resource:
     name: VMwareCluster01
@@ -73,7 +75,7 @@ foreman_pass: password
 
 ## Compute Attribute
 This is an example to configure VMware vSphere attributes.
-```
+```yaml
 - name: Ensure Compute Attribute
   foreman_compute_attribute:
     compute_profile: 1-Small
@@ -119,7 +121,7 @@ This is an example to configure VMware vSphere attributes.
 ```
 ## Config Template
 ### Deploy existing file
-```
+```yaml
 - name: Ensure Config Template
   foreman_config_template:
     name: CoreOS Cloud-config
@@ -132,7 +134,7 @@ This is an example to configure VMware vSphere attributes.
     ...
 ```
 ### Deploy content
-```
+```yaml
 - name: Ensure Config Template
   foreman_config_template:
     name: CoreOS Cloud-config
@@ -146,15 +148,16 @@ This is an example to configure VMware vSphere attributes.
 ```
 
 ## Domain
-```
+```yaml
 - name: Ensure Domain
   foreman_domain:
     name: example.com
     state: present
     ...
 ```
+
 ## Environments
-```
+```yaml
 - name: Ensure Environment
   foreman_environment:
     name: Production
@@ -163,7 +166,7 @@ This is an example to configure VMware vSphere attributes.
 ```
 ## Host
 ### Provision using installation from medium
-```
+```yaml
 - name: Ensure Host
   foreman_host:
     name: ansible-host-01
@@ -175,8 +178,9 @@ This is an example to configure VMware vSphere attributes.
     provision_method: build
     root_pass: topsecret
 ```
+
 ### Provision by clone from image
-```
+```yaml
 - name: Ensure Host
   foreman_host:
     name: ansible-host-03
@@ -188,7 +192,7 @@ This is an example to configure VMware vSphere attributes.
 ...
 ```
 ### Provision using a hostgroup
-```
+```yaml
 - name: Ensure Host
   foreman_host:
     name: ansible-host-02
@@ -200,7 +204,7 @@ This is an example to configure VMware vSphere attributes.
 ```
 ### Delete host
 To delete a host Foreman must know the FQDN. Use one of the following methods:
-```
+```yaml
 - name: Ensure absent host
   foreman_host:
     name: ansible-host-01
@@ -209,7 +213,7 @@ To delete a host Foreman must know the FQDN. Use one of the following methods:
     ...
 ```
 or
-```
+```yaml
 - name: Ensure absent host
   foreman_host:
     name: ansible-host-01.example.com
@@ -217,7 +221,7 @@ or
 ...
 ```
 ## Hostgroup
-```
+```yaml
 - name: Ensure Hostgroup
   foreman_hostgroup:
     name: Hostgroup01
@@ -242,7 +246,7 @@ or
 ```
 
 ## Medium
-```
+```yaml
 - name: Ensure Medium
   foreman_medium:
     name: CoreOS
@@ -252,7 +256,7 @@ or
 ```
 
 ## Operatingsystem
-```
+```yaml
 - name: Ensure Operatingsystem
   foreman_operatingsystem:
     name: CoreOS
@@ -262,14 +266,14 @@ or
     - x86_64
     media:
     - CoreOS mirror
-    partition_tables:
+    ptables:
     - CoreOS default fake
     state: present
   ...
 ```
 
 ## Operatingsystem default template
-```
+```yaml
 - name: Ensure Operatingsystem default template
   foreman_os_default_template:
     operatingsystem: CoreOS
@@ -281,7 +285,7 @@ or
 
 ## Organization
 Works only if Katello is used
-```
+```yaml
 - name: Ensure Organization
   foreman_organization:
     name: MyOrganization
@@ -289,8 +293,17 @@ Works only if Katello is used
     ...
 ```
 
-## Role
+## Partition Table
+```yaml
+- name: Ensure partition table
+  foreman_ptable:
+    name: MyPartitionTable
+    layout: 'some layout'
+    state: present
+    ...
 ```
+## Role
+```yaml
 - name: Ensure Role
   foreman_role:
     name: MyRole
@@ -298,7 +311,7 @@ Works only if Katello is used
 ```
 
 ## Smart Proxy
-```
+```yaml
 - name: Ensure Smart Proxy
   foreman_smart_proxy:
     name: SmartProxy01
@@ -308,7 +321,7 @@ Works only if Katello is used
 ```
 
 ## User
-```
+```yaml
 - name: Ensure User
   foreman_user:
     login: MyUser

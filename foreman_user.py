@@ -133,7 +133,7 @@ def ensure(module):
                          username=foreman_user,
                          password=foreman_pass)
 
-    data = {'login': login}
+    data = dict(login=login)
 
     try:
         # Search the user. If it does exist get detailed information

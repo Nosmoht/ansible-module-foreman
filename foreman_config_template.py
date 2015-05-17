@@ -28,8 +28,8 @@ options:
   template_file:
     description: Path and filename to load the template from
     required: false
-  template_kind:
-    description: Template Kind name (not implemented yet)
+  template_kind_name:
+    description: Template Kind name
     required: false
   snippet:
     description: Define if template is a snippet or not
@@ -126,7 +126,7 @@ def ensure():
     snippet = module.params['snippet']
     template = module.params['template']
     template_file = module.params['template_file']
-    template_kind = module.params['template_kind']
+    template_kind_name = module.params['template_kind_name']
 
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
@@ -171,7 +171,7 @@ def ensure():
 
         data['locked'] = locked
         data['snippet'] = snippet
-        data['template_kind'] = template_kind
+        data['template_kind_name'] = template_kind_name
         if not snippet:
             data['operatingsystems'] = get_resources(resource_type='operatingsystem',
                                                      resource_func=theforeman.search_operatingsystem,
@@ -202,10 +202,10 @@ def main():
         argument_spec=dict(
             name=dict(type='str', required=True),
             locked=dict(type='bool', default=False),
-            operatingsystems=dict(type='list', default=None),
-            template=dict(type='str', default=None),
-            template_file=dict(type='str', default=None),
-            template_kind=dict(type='str', default=None),
+            operatingsystems=dict(type='list', required=False),
+            template=dict(type='str', required=False),
+            template_file=dict(type='str', required=False),
+            template_kind_name=dict(type='str', required=False),
             snippet=dict(type='bool', default=False),
             state=dict(type='str', default='present', choices=['present', 'absent']),
             foreman_host=dict(type='str', default='127.0.0.1'),

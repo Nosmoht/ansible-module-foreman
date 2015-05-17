@@ -67,7 +67,7 @@ EXAMPLES = '''
     - CoreOS mirror
     major: 607
     minor: 0.0
-    partition_tables:
+    ptables:
     - CoreOS default fake
     state: present
     foreman_host: 127.0.0.1
@@ -106,16 +106,23 @@ def equal_dict_lists(l1, l2, compare_key='name'):
     return s1.issubset(s2) and s2.issubset(s1)
 
 
-def get_resources(resource_type, resource_func, resource_names):
+def get_resources(resource_type, resource_func, resource_specs):
     result = []
-    for item in resource_names:
+    for item in resource_specs:
+        search_data = dict()
+        if isinstance(item, dict):
+            for key in item:
+                search_data[key] = item[key]
+        else:
+            search_data['name'] = item.get('name')
         try:
-            resource = resource_func(data=dict(name=item))
+            resource = resource_func(data=search_data)
             if not resource:
                 module.fail_json(
-                    msg='Could not find resource type {resource_type} named {name}'.format(resource_type=resource_type,
-                                                                                           name=item))
-            result.append(dict(name=item, id=resource.get('id')))
+                    msg='Could not find resource type {resource_type} defined as {spec}'.format(
+                        resource_type=resource_type,
+                        spec=item))
+            result.append(resource)
         except ForemanError as e:
             module.fail_json(msg='Could not search resource type {resource_type} named {name}: {error}'.format(
                 resource_type=resource_type, name=item, error=e.message))
@@ -124,17 +131,20 @@ def get_resources(resource_type, resource_func, resource_names):
 
 def get_architectures(architectures):
     return get_resources(resource_type='architecture',
-                         resource_func=theforeman.search_architecture, resource_names=architectures)
+                         resource_func=theforeman.search_architecture,
+                         resource_specs=architectures)
 
 
 def get_media(media):
     return get_resources(resource_type='medium',
-                         resource_func=theforeman.search_medium, resource_names=media)
+                         resource_func=theforeman.search_medium,
+                         resource_specs=media)
 
 
-def get_partition_tables(partition_tables):
+def get_ptables(ptables):
     return get_resources(resource_type='partition table',
-                         resource_func=theforeman.search_partition_table, resource_names=partition_tables)
+                         resource_func=theforeman.search_partition_table,
+                         resource_specs=ptables)
 
 
 def ensure():
@@ -168,7 +178,7 @@ def ensure():
     data['minor'] = module.params['minor']
     data['media'] = get_media(media=module.params['media'])
 
-    data['ptables'] = get_partition_tables(partition_tables=module.params['partition_tables'])
+    data['ptables'] = get_ptables(ptables=module.params['ptables'])
     data['release_name'] = module.params['release_name']
 
     if not os:
@@ -204,7 +214,7 @@ def main():
             media=dict(type='list', default=None),
             minor=dict(type='str', default=None),
             name=dict(type='str', required=True),
-            partition_tables=dict(type='list', default=None),
+            ptables=dict(type='list', default=None),
             release_name=dict(type='str', default=None),
             state=dict(type='str', default='present', choices=['present', 'absent']),
             foreman_host=dict(type='str', default='127.0.0.1'),

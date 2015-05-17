@@ -88,11 +88,16 @@ except ImportError:
 def get_roles(module, theforeman, roles):
     result = list()
     for item in roles:
+        search_data = dict()
+        if isinstance(item, dict):
+            search_data = item
+        else:
+            search_data['name'] = item
         try:
-            role = theforeman.search_role(data={'name': item})
+            role = theforeman.search_role(data=search_data)
             if not role:
                 module.fail_json(msg='Could not find role {0}'.format(item))
-            result.append(dict(name=item, id=role.get('id')))
+            result.append(role)
         except ForemanError as e:
             module.fail_json(msg='Could not search role {0}: {1}'.format(item, e.message))
     return result

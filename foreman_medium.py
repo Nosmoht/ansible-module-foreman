@@ -31,28 +31,30 @@ def ensure(module):
     except ForemanError as e:
         module.fail_json(msg='Could not get medium: {0}'.format(e.message))
 
+    data['path'] = path
+
     if not medium and state == 'present':
         try:
-            theforeman.create_medium(data=data)
-            return True
+            medium = theforeman.create_medium(data=data)
+            return True, medium
         except ForemanError as e:
             module.fail_json(msg='Could not create medium: {0}'.format(e.message))
 
     if medium:
         if state == 'absent':
             try:
-                theforeman.delete_medium(id=medium.get('id'))
-                return True
+                medium = theforeman.delete_medium(id=medium.get('id'))
+                return True, medium
             except ForemanError as e:
                 module.fail_json('Could not delete medium: {0}'.format(e.message))
         if medium.get('path') != path:
             try:
-                theforeman.update_medium(id=medium.get('id'), data=data)
-                return True
+                medium = theforeman.update_medium(id=medium.get('id'), data=data)
+                return True, medium
             except ForemanError as e:
                 module.fail_json('Could not update medium: {0}'.format(e.message))
 
-    return False
+    return False, medium
 
 
 def main():
@@ -71,8 +73,8 @@ def main():
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
-    changed = ensure(module)
-    module.exit_json(changed=changed, name=module.params['name'])
+    changed, medium = ensure(module)
+    module.exit_json(changed=changed, medium=medium)
 
 # import module snippets
 from ansible.module_utils.basic import *

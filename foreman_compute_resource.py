@@ -97,7 +97,9 @@ else:
 def get_required_provider_params(provider):
     provider_name = provider.lower()
 
-    if provider_name == 'ec2':
+    if provider_name == 'docker':
+        return ['password', 'url', 'user']
+    elif provider_name == 'ec2':
         return ['user', 'password']
     elif provider_name in ['libvirt', 'ovirt']:
         return ['url', 'user', 'password']
@@ -117,7 +119,7 @@ def ensure(module):
     if provider:
         provider_params = get_required_provider_params(provider)
         if not provider_params:
-            module.fail_json('Provider {provider} not supported'.format(provider))
+            module.fail_json(msg='Provider {provider} not supported'.format(provider=provider))
         for param in provider_params:
             if not param in module.params:
                 module.fail_json(msg='Parameter {0} must be defined for provide {1}'.format(param, provider))

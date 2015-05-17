@@ -153,6 +153,7 @@ def ensure():
     state = module.params['state']
 
     data = dict(name=name)
+    data['major'] = module.params['major']
 
     try:
         os = theforeman.search_operatingsystem(data=data)
@@ -174,7 +175,6 @@ def ensure():
     data['architectures'] = get_architectures(architectures=module.params['architectures'])
     data['description'] = module.params['description']
     data['family'] = module.params['family']
-    data['major'] = module.params['major']
     data['minor'] = module.params['minor']
     data['media'] = get_media(media=module.params['media'])
 

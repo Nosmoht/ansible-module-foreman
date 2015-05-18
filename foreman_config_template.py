@@ -9,6 +9,10 @@ short_description:
 description:
 - Create, update and and delete Foreman provision templates using Foreman API v2
 options:
+  audit_comment:
+    description:
+    - Audit comment
+    required: false
   name:
     description: Provision template name
     required: true
@@ -125,6 +129,7 @@ def get_resources(resource_type, resource_func, resource_specs):
 
 
 def ensure():
+    audit_comment = module.params['audit_comment']
     compareable_keys = ['locked', 'snippet', 'template']
     locked = module.params['locked']
     name = module.params['name']
@@ -176,9 +181,11 @@ def ensure():
             except IOError as e:
                 module.fail_json(msg='Could not open file {0}: {1}'.format(template_file, e.message))
 
+        data['audit_comment'] = audit_comment
         data['locked'] = locked
         data['snippet'] = snippet
         data['template_kind_name'] = template_kind_name
+
         if not snippet:
             data['operatingsystems'] = get_resources(resource_type='operatingsystem',
                                                      resource_func=theforeman.search_operatingsystem,
@@ -207,6 +214,7 @@ def main():
     global module
     module = AnsibleModule(
         argument_spec=dict(
+            audit_comment=dict(type='str', required=False),
             name=dict(type='str', required=True),
             locked=dict(type='bool', default=False),
             operatingsystems=dict(type='list', required=False),

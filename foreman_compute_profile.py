@@ -70,48 +70,50 @@ def ensure(module):
                          username=foreman_user,
                          password=foreman_pass)
 
-    data = {'name': name}
+    data = dict(name=name)
 
     try:
-        profile = theforeman.search_compute_profile(data=data)
+        compute_profile = theforeman.search_compute_profile(data=data)
     except ForemanError as e:
         module.fail_json(msg='Could not get compute profile: {0}'.format(e.message))
 
-    if not profile and state == 'present':
-        try:
-            profile = theforeman.create_compute_profile(data=data)
-            return True, profile
-        except ForemanError as e:
-            module.fail_json(msg='Could not create compute profile: {0}'.format(e.message))
-
-    if profile:
-        if state == 'absent':
+    if state == 'absent':
+        if compute_profile:
             try:
-                profile = theforeman.delete_compute_profile(id=profile.get('id'))
-                return True, profile
+                compute_profile = theforeman.delete_compute_profile(id=compute_profile.get('id'))
             except ForemanError as e:
                 module.fail_json(msg='Could not delete compute profile: {0}'.format(e.message))
+            return True, compute_profile
+        return False, compute_profile
 
-    return False, profile
+    if state == 'present':
+        if not compute_profile:
+            try:
+                compute_profile = theforeman.create_compute_profile(data=data)
+            except ForemanError as e:
+                module.fail_json(msg='Could not create compute profile: {0}'.format(e.message))
+            return True, compute_profile
+
+    return False, compute_profile
 
 
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            name=dict(Type='str', required=True),
-            state=dict(Type='str', Default='present', choices=['present', 'absent']),
-            foreman_host=dict(Type='str', Default='127.0.0.1'),
-            foreman_port=dict(Type='str', Default='443'),
-            foreman_user=dict(Type='str', required=True),
-            foreman_pass=dict(Type='str', required=True)
+            name=dict(type='str', required=True),
+            state=dict(type='str', default='present', choices=['present', 'absent']),
+            foreman_host=dict(type='str', default='127.0.0.1'),
+            foreman_port=dict(type='str', default='443'),
+            foreman_user=dict(type='str', required=True),
+            foreman_pass=dict(type='str', required=True)
         ),
     )
 
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
-    changed, profile = ensure(module)
-    module.exit_json(changed=changed, compute_profile=profile)
+    changed, compute_profile = ensure(module)
+    module.exit_json(changed=changed, compute_profile=compute_profile)
 
 # import module snippets
 from ansible.module_utils.basic import *

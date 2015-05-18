@@ -94,14 +94,18 @@ else:
     foremanclient_found = True
 
 
-def get_required_provider_params(provider):
+def get_provider_params(provider):
     provider_name = provider.lower()
 
     if provider_name == 'docker':
         return ['password', 'url', 'user']
     elif provider_name == 'ec2':
-        return ['user', 'password']
-    elif provider_name in ['libvirt', 'ovirt']:
+        return ['access_key', 'password', 'region', 'url', 'user']
+    elif provider_name == 'google':
+        return ['email', 'key_path', 'project', 'url', 'zone']
+    elif provider_name == 'libvirt':
+        return ['display_type', 'url']
+    elif provider_name == 'ovirt':
         return ['url', 'user', 'password']
     elif provider_name == 'openstack':
         return ['url', 'user', 'password', 'tenant']
@@ -116,14 +120,6 @@ def ensure(module):
     state = module.params['state']
     provider = module.params['provider']
 
-    if provider:
-        provider_params = get_required_provider_params(provider)
-        if not provider_params:
-            module.fail_json(msg='Provider {provider} not supported'.format(provider=provider))
-        for param in provider_params:
-            if not param in module.params:
-                module.fail_json(msg='Parameter {0} must be defined for provide {1}'.format(param, provider))
-
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
@@ -134,31 +130,42 @@ def ensure(module):
                          username=foreman_user,
                          password=foreman_pass)
 
-    data = {'name': name}
+    data = dict(name=name)
 
     try:
         compute_resource = theforeman.search_compute_resource(data=data)
     except ForemanError as e:
         module.fail_json(msg='Could not get compute resource: {0}'.format(e.message))
 
-    if not compute_resource and state == 'present':
-        data['provider'] = provider
-        for param in provider_params:
-            data[param] = module.params[param]
-
-        try:
-            compute_resource = theforeman.create_compute_resource(data=data)
-            return True, compute_resource
-        except ForemanError as e:
-            module.fail_json(msg='Could not create compute resource: {0}'.format(e.message))
-
-    if compute_resource:
-        if state == 'absent':
+    if state == 'absent':
+        if compute_resource:
             try:
-                compute_resource = theforeman.delete_compute_resource(id=resource.get('id'))
-                return True, compute_resource
+                compute_resource = theforeman.delete_compute_resource(id=compute_resource.get('id'))
             except ForemanError as e:
                 module.fail_json(msg='Could not delete compute resource: {0}'.format(e.message))
+            return True, compute_resource
+
+    data['provider'] = provider
+    provider_params = get_provider_params(provider=provider)
+    for key in provider_params:
+        data[key] = module.params[key]
+
+    if state == 'present':
+        if not compute_resource:
+            try:
+                compute_resource = theforeman.create_compute_resource(data=data)
+            except ForemanError as e:
+                module.fail_json(msg='Could not create compute resource: {0}'.format(e.message))
+            return True, compute_resource
+
+        return False, compute_resource
+
+        if not all(data.get(key, None) == compute_resource.get(key, None) for key in provider_params):
+            try:
+                compute_resource = theforeman.update_compute_resource(id=compute_resource.get('id'), data=data)
+            except ForemanError as e:
+                module.fail_json(msg='Could not update compute resource: {0}'.format(e.message))
+            return True, compute_resource
 
     return False, compute_resource
 
@@ -167,9 +174,14 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             name=dict(type='str', required=True),
+            access_key=dict(type='str', requireD=False),
             datacenter=dict(type='str', required=False),
+            display_type=dict(type='str', required=False),
+            email=dict(type='str', required=False),
+            key_path=dict(type='str', required=False),
             password=dict(type='str', required=False),
             provider=dict(type='str', required=False),
+            region=dict(type='str', required=False),
             server=dict(type='str', required=False),
             url=dict(type='str', required=False),
             user=dict(type='str', required=False),

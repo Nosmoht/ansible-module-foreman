@@ -106,7 +106,7 @@ def equal_dict_lists(l1, l2, compare_key='name'):
     return s1.issubset(s2) and s2.issubset(s1)
 
 
-def get_resources(resource_type, resource_func, resource_specs):
+def get_resources(resource_type, resource_specs):
     result = []
     for item in resource_specs:
         search_data = dict()
@@ -116,7 +116,7 @@ def get_resources(resource_type, resource_func, resource_specs):
         else:
             search_data['name'] = item.get('name')
         try:
-            resource = resource_func(data=search_data)
+            resource = theforeman.search_resource(resource_type=resource_type, data=search_data)
             if not resource:
                 module.fail_json(
                     msg='Could not find resource type {resource_type} defined as {spec}'.format(
@@ -124,27 +124,9 @@ def get_resources(resource_type, resource_func, resource_specs):
                         spec=item))
             result.append(resource)
         except ForemanError as e:
-            module.fail_json(msg='Could not search resource type {resource_type} named {name}: {error}'.format(
-                resource_type=resource_type, name=item, error=e.message))
+            module.fail_json(msg='Could not search resource type {resource_type} defined as {spec}: {error}'.format(
+                resource_type=resource_type, spec=item, error=e.message))
     return result
-
-
-def get_architectures(architectures):
-    return get_resources(resource_type='architecture',
-                         resource_func=theforeman.search_architecture,
-                         resource_specs=architectures)
-
-
-def get_media(media):
-    return get_resources(resource_type='medium',
-                         resource_func=theforeman.search_medium,
-                         resource_specs=media)
-
-
-def get_ptables(ptables):
-    return get_resources(resource_type='partition table',
-                         resource_func=theforeman.search_partition_table,
-                         resource_specs=ptables)
 
 
 def ensure():
@@ -172,13 +154,13 @@ def ensure():
 
         return False, os
 
-    data['architectures'] = get_architectures(architectures=module.params['architectures'])
+    data['architectures'] = get_resources(resource_type='architectures', resource_specs=module.params['architectures'])
     data['description'] = module.params['description']
     data['family'] = module.params['family']
     data['minor'] = module.params['minor']
-    data['media'] = get_media(media=module.params['media'])
+    data['media'] = get_resources(resource_type='media', resource_specs=module.params['media'])
 
-    data['ptables'] = get_ptables(ptables=module.params['ptables'])
+    data['ptables'] = get_resources(resource_type='ptables', resource_specs=module.params['ptables'])
     data['release_name'] = module.params['release_name']
 
     if not os:
@@ -207,15 +189,15 @@ def main():
 
     module = AnsibleModule(
         argument_spec=dict(
-            architectures=dict(type='list', default=None),
-            description=dict(type='str', default=None),
-            family=dict(type='str', default=None),
-            major=dict(type='str', required=True),
-            media=dict(type='list', default=None),
-            minor=dict(type='str', default=None),
+            architectures=dict(type='list', required=False),
+            description=dict(type='str', required=False),
+            family=dict(type='str', required=False),
+            major=dict(type='str', required=False),
+            media=dict(type='list', required=False),
+            minor=dict(type='str', required=False),
             name=dict(type='str', required=True),
-            ptables=dict(type='list', default=None),
-            release_name=dict(type='str', default=None),
+            ptables=dict(type='list', required=False),
+            release_name=dict(type='str', required=False),
             state=dict(type='str', default='present', choices=['present', 'absent']),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),

@@ -1,4 +1,14 @@
-# ansible-library-foreman
+Ansible library Foreman
+==========
+
+# Table of Contents
+- [Description](#description)
+- [Requirements](#requirements)
+- [Examples](#examples)
+- [License](#license)
+- [Author information](#author information)
+
+# Description
 Ansible library to configure [Foreman] and manage hosts.
 
 With the current implementation it's possible to create, update and delete the following Foreman Resources
@@ -7,7 +17,7 @@ With the current implementation it's possible to create, update and delete the f
 - Compute Profiles
 - Compute Resources
 - Config Templates
-- Domain
+- Domains
 - Environments
 - Hosts
 - Hostgroups
@@ -18,7 +28,7 @@ With the current implementation it's possible to create, update and delete the f
 - Organizations (need s Katello)
 - Partition Tables
 - Roles
-- Smart Procies
+- Smart Proxies
 - Subnets
 - Users
 
@@ -119,6 +129,7 @@ This is an example to configure VMware vSphere attributes.
           thin: true
     ...
 ```
+
 ## Config Template
 ### Deploy existing file
 ```yaml
@@ -339,9 +350,22 @@ Works only if Katello is used
 
 # License
 
-GPL
+Copyright 2015 Thomas Krahn
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 
 # Author
+
 [Thomas Krahn]
 
 [Foreman]: www.theforeman.org

@@ -311,6 +311,18 @@ def ensure():
         except ForemanError as e:
             module.fail_json(msg='Could not get host parameters: {0}'.format(e.message))
 
+        # Delete parameters which are not defined
+        for host_param in host_parameters:
+            host_param_name = host_param.get('name')
+            defined_params = [item for item in parameters if item.get('name') == host_param_name]
+            if not defined_params:
+                try:
+                    theforeman.delete_host_parameter(host_id=host_id, parameter_id=host_param.get('id'))
+                except ForemanError as e:
+                    module.fail_json(msg='Could not delete host parameter {name}: {error}'.format(name=host_param_name))
+                changed = True
+
+        # Create and update parameters
         for param in parameters:
             host_params = [item for item in host_parameters if item.get('name') == param.get('name')]
             if not host_params:
@@ -323,8 +335,12 @@ def ensure():
                 changed = True
             else:
                 for host_param in host_params:
-                    # Replace \n sems to be needed. Otherwise some strings are always changed evenso they look equal
-                    if host_param.get('value').replace('\n', '') != param.get('value').replace('\n', ''):
+                    host_value = host_param.get('value')
+                    param_value = param.get('value')
+                    if isinstance(param_value, list):
+                        param_value = param_value.join(',')
+                    # Replace \n seems to be needed. Otherwise some strings are always changed although they look equal
+                    if host_value.replace('\n', '') != param_value.replace('\n', ''):
                         try:
                             theforeman.update_host_parameter(host_id=host_id,
                                                              parameter_id=host_param.get('id'),

@@ -33,7 +33,7 @@ With the current implementation it's possible to create, update and delete the f
 - Users
 
 # Requirements
-[python-foreman] >= 0.13.1 is required to be installed on the system where Ansible is started from.
+[python-foreman] >= 0.12.11 is required to be installed on the system where Ansible is started from.
 
 # Examples
 The following parameters are always required so the module knows how to connect to the Foreman [API v2].

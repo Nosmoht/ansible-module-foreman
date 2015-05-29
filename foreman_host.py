@@ -338,7 +338,7 @@ def ensure():
                     host_value = host_param.get('value')
                     param_value = param.get('value')
                     if isinstance(param_value, list):
-                        param_value = param_value.join(',')
+                        param_value = ','.join(param_value)
                     # Replace \n seems to be needed. Otherwise some strings are always changed although they look equal
                     if host_value.replace('\n', '') != param_value.replace('\n', ''):
                         try:

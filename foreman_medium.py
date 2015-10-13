@@ -13,6 +13,7 @@ def ensure(module):
     name = module.params['name']
     path = module.params['path']
     state = module.params['state']
+    os_family = module.params['os_family']
 
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
@@ -32,6 +33,7 @@ def ensure(module):
         module.fail_json(msg='Could not get medium: {0}'.format(e.message))
 
     data['path'] = path
+    data['os_family'] = os_family
 
     if not medium and state == 'present':
         try:
@@ -47,12 +49,12 @@ def ensure(module):
                 return True, medium
             except ForemanError as e:
                 module.fail_json('Could not delete medium: {0}'.format(e.message))
-        if medium.get('path') != path:
+        if medium.get('path') != path or medium.get('os_family') != os_family:
             try:
                 medium = theforeman.update_medium(id=medium.get('id'), data=data)
                 return True, medium
             except ForemanError as e:
-                module.fail_json('Could not update medium: {0}'.format(e.message))
+                module.fail_json(msg='Could not update medium: {0}'.format(e.message))
 
     return False, medium
 
@@ -62,6 +64,7 @@ def main():
         argument_spec=dict(
             name=dict(type='str', required=True),
             path=dict(type='str', required=False),
+            os_family=dict(type='str', required=False),
             state=dict(type='str', default='present', choices=['present', 'absent']),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),

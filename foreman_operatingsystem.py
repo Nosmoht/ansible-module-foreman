@@ -114,7 +114,7 @@ def get_resources(resource_type, resource_specs):
             for key in item:
                 search_data[key] = item[key]
         else:
-            search_data['name'] = item.get('name')
+            search_data['name'] = item
         try:
             resource = theforeman.search_resource(resource_type=resource_type, data=search_data)
             if not resource:

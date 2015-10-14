@@ -11,8 +11,6 @@ options:
   name:
     description: Name of environment
     required: true
-    default: null
-    aliases: []
   state:
     description: State of environment
     required: false
@@ -29,11 +27,9 @@ options:
   foreman_user:
     description: Username to be used to authenticate on Foreman
     required: true
-    default: null
   foreman_pass:
     description: Password to be used to authenticate user on Foreman
     required: true
-    default: null
 notes:
 - Requires the python-foreman package to be installed. See https://github.com/Nosmoht/python-foreman.
 author: Thomas Krahn

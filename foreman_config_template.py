@@ -13,11 +13,11 @@ options:
     description:
     - Audit comment
     required: false
+    default: None
   name:
     description: Provision template name
     required: true
-    default: null
-    aliases: None
+    default: None
   locked:
     description: Whether or not the template is locked for editing
     required: false
@@ -29,12 +29,15 @@ options:
   template:
     description: RAW template content
     required: false
+    default: None
   template_file:
     description: Path and filename to load the template from
     required: false
+    default: None
   template_kind_name:
     description: Template Kind name
     required: false
+    default: None
   snippet:
     description: Define if template is a snippet or not
     required: false
@@ -55,11 +58,9 @@ options:
   foreman_user:
     description: Username to be used to authenticate on Foreman
     required: true
-    default: null
   foreman_pass:
     description: Password to be used to authenticate user on Foreman
     required: true
-    default: null
 notes:
 - Requires the python-foreman package to be installed. See https://github.com/Nosmoht/python-foreman.
 author: Thomas Krahn

@@ -1,6 +1,71 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+DOCUMENTATION = '''
+---
+module: foreman_medium
+short_description: Manage Foreman media using Foreman API v2
+description:
+- Create, update and delete Foreman media using Foreman API v2
+options:
+  name:
+    description:
+    - Medium name
+    required: true
+    default: null
+    aliases: []
+  path:
+    description:
+    - The path to the medium, can be a URL or a valid NFS server (exclusive of the architecture).
+    required: true
+  os_family:
+    description:
+    - Operating system family
+    required: false
+  state:
+    description:
+    - Medium state
+    required: false
+    default: 'present'
+    choices: ['present', 'absent']
+  foreman_host:
+    description:
+    - Hostname or IP address of Foreman system
+    required: false
+    default: 127.0.0.1
+  foreman_port:
+    description:
+    - Port of Foreman API
+    required: false
+    default: 443
+  foreman_user:
+    description:
+    - Username to be used to authenticate on Foreman
+    required: true
+    default: null
+  foreman_pass:
+    description:
+    - Password to be used to authenticate user on Foreman
+    required: true
+    default: null
+notes:
+- Requires the python-foreman package to be installed. See https://github.com/Nosmoht/python-foreman.
+author: Thomas Krahn
+'''
+
+EXAMPLES = '''
+- name: Medium
+  foreman_medium:
+    name: CentOS mirror
+    path: http://mirror.centos.org/centos/$version/os/$arch
+    os_family: RedHat
+    state: present
+    foreman_user: admin
+    foreman_pass: secret
+    foreman_host: foreman.example.com
+    foreman_port: 443
+'''
+
 try:
     from foreman.foreman import *
 
@@ -81,5 +146,5 @@ def main():
 
 # import module snippets
 from ansible.module_utils.basic import *
-
-main()
+if __name__ == '__main__':
+    main()

@@ -18,6 +18,10 @@ options:
     description:
     - Partition Table layout
     required: false
+  os_family:
+    description:
+    - OS family
+    required: false
   state:
     description:
     - Partition Table state

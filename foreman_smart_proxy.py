@@ -24,15 +24,15 @@ description:
 - Create and delete Foreman smart proxy resources using Foreman API v2
 options:
   name:
-    description: Name of architecture
+    description: Smart proxy name
     required: true
   state:
-    description: State of architecture
+    description: Smart proxy state
     required: false
     default: present
     choices: ["present", "absent"]
   url:
-    description: URL of smart proxy
+    description: Smart proxy URL
     required: false
     default: None
   foreman_host:

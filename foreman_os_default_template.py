@@ -11,15 +11,12 @@ options:
   operatingsystem:
     description: Operatingsystem name
     required: true
-    default: None
   config_template:
     description: Config Template name
     required: true
-    default: None
   template_kind:
     description: Template kind
     required: true
-    default: None
   state:
     description: OS Default template state
     required: false
@@ -36,11 +33,9 @@ options:
   foreman_user:
     description: Username to be used to authenticate on Foreman
     required: true
-    default: null
   foreman_pass:
     description: Password to be used to authenticate user on Foreman
     required: true
-    default: null
 notes:
 - Requires the python-foreman package to be installed. See https://github.com/Nosmoht/python-foreman.
 author: Thomas Krahn
@@ -167,4 +162,3 @@ def main():
 from ansible.module_utils.basic import *
 
 main()
-

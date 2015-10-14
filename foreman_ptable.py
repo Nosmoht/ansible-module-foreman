@@ -12,8 +12,6 @@ options:
     description:
     - Partition Table name
     required: true
-    default: null
-    aliases: []
   layout:
     description:
     - Partition Table layout
@@ -42,12 +40,10 @@ options:
     description:
     - Username to be used to authenticate on Foreman
     required: true
-    default: null
   foreman_pass:
     description:
     - Password to be used to authenticate user on Foreman
     required: true
-    default: null
 notes:
 - Requires the python-foreman package to be installed. See https://github.com/Nosmoht/python-foreman.
 author: Thomas Krahn

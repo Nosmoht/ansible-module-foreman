@@ -20,28 +20,28 @@ options:
   login:
     description: Name of architecture
     required: true
-    default: null
+    default: None
     aliases: ['name']
   firstname:
     description: User's firstname
     required: false
-    default: null
+    default: None
   lastname:
     description: User's lastname
     required: false
-    default: null
+    default: None
   mail:
     description: Mail address
     required: false
-    default: null
+    default: None
   password:
     description: Password
     required: false
-    default: null
+    default: None
   roles:
     description: Roles assigned to the user
     required: false
-    default: null
+    default: None
   state:
     description: State of architecture
     required: false
@@ -58,11 +58,9 @@ options:
   foreman_user:
     description: Username to be used to authenticate on Foreman
     required: true
-    default: null
   foreman_pass:
     description: Password to be used to authenticate user on Foreman
     required: true
-    default: null
 notes:
 - Requires the python-foreman package to be installed. See https://github.com/Nosmoht/python-foreman.
 author: Thomas Krahn

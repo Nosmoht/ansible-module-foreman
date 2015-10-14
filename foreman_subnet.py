@@ -11,49 +11,39 @@ options:
   name:
     description: Subnet name
     required: True
-    default: null
-    aliases: []
   network:
     description: Subnet network
     required: False
-    default: null
-    aliases: []
+    default: None
   mask:
     description: Netmask for this subnet
     required: False
-    default: null
-    aliases: []
+    default: None
   gateway:
     description: Gateway for this subnet
     required: False
-    default: null
-    aliases: []
+    default: None
   dns_primary:
     description: Primary DNS for this subnet
     required: False
-    default: null
-    aliases: []
+    default: None
   dns_secondary:
     description: Secondary DNS for this subnet
     required: False
-    default: null
-    aliases: []
+    default: None
   ipam:
     description: Enable IP Address auto suggestion for this subnet
     required: False
-    default: null
-    aliases: []
+    default: None
     choices: ['DHCP', 'Internal DB', 'None']),
   ip_from:
     description: Starting IP Address for IP auto suggestion
     required: False
-    default: null
-    aliases: []
+    default: None
   ip_to:
     description: Ending IP Address for IP auto suggestion
     required: False
-    default: null
-    aliases: []
+    default: None
   state:
     description: State of subnet
     required: false
@@ -62,8 +52,7 @@ options:
   vlanid:
     description: VLAN ID for this subnet
     required: False
-    default: null
-    aliases: []
+    default: None
   foreman_host:
     description: Hostname or IP address of Foreman system
     required: false
@@ -75,11 +64,9 @@ options:
   foreman_user:
     description: Username to be used to authenticate on Foreman
     required: true
-    default: null
   foreman_pass:
     description: Password to be used to authenticate user on Foreman
     required: true
-    default: null
 notes:
 - Requires the python-foreman package to be installed. See https://github.com/Nosmoht/python-foreman.
 author: Thomas Krahn <ntbc@gmx.net>

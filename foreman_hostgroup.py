@@ -11,40 +11,38 @@ options:
   architecture:
     description: Architecture name
     required: False
-    default: null
+    default: None
   domain:
     description: Domain name
     required: False
-    default: null
+    default: None
   environment:
     description: Environment name
     required: False
-    default: null
+    default: None
   medium:
     description: Medium name
     required: False
-    default: null
+    default: None
   name:
     description: Hostgroup name
     required: True
-    default: null
-    aliases: []
   operatingsystem:
     description: Operatingsystem name
     required: False
-    default: null
+    default: None
   partition_table:
     description: Partition table name
     required: False
-    default: null
+    default: None
   smart_proxy:
     description: Smart Proxy name
     required: False
-    default: null
+    default: None
   subnet:
     description: Subnet name
     required: False
-    default: null
+    default: None
   state:
     description: Hostgroup state
     required: false
@@ -61,11 +59,9 @@ options:
   foreman_user:
     description: Username to be used to authenticate on Foreman
     required: true
-    default: null
   foreman_pass:
     description: Password to be used to authenticate user on Foreman
     required: true
-    default: null
 notes:
 - Requires the python-foreman package to be installed. See https://github.com/Nosmoht/python-foreman.
 author: Thomas Krahn

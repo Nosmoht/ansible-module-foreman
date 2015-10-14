@@ -11,12 +11,10 @@ options:
   name:
     description: Domain name
     required: true
-    default: null
-    aliases: []
   fullname:
     description: Description of the domain
     required: false
-    default: null
+    default: None
   state:
     description: Domain state
     required: false
@@ -33,11 +31,11 @@ options:
   foreman_user:
     description: Username to be used to authenticate on Foreman
     required: true
-    default: null
+    default: None
   foreman_pass:
     description: Password to be used to authenticate user on Foreman
     required: true
-    default: null
+    default: None
 notes:
 - Requires the python-foreman package to be installed. See https://github.com/Nosmoht/python-foreman.
 author: Thomas Krahn

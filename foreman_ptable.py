@@ -73,6 +73,7 @@ def ensure():
     name = module.params['name']
     layout = module.params['layout']
     state = module.params['state']
+    os_family = module.params['os_family']
 
     data = dict(name=name)
 
@@ -82,6 +83,7 @@ def ensure():
         module.fail_json(msg='Could not get partition table: {0}'.format(e.message))
 
     data['layout'] = layout
+    data['os_family'] = os_family
 
     if not ptable and state == 'present':
         try:
@@ -108,6 +110,7 @@ def main():
         argument_spec=dict(
             name=dict(type='str', required=True),
             layout=dict(type='str', required=False),
+            os_family=dict(type='str', required=False),
             state=dict(type='str', default='present', choices=['present', 'absent']),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),

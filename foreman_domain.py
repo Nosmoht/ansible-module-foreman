@@ -53,6 +53,7 @@ options:
     default: None
 notes:
 - Requires the python-foreman package to be installed. See https://github.com/Nosmoht/python-foreman.
+version_added: "2.0"
 author: Thomas Krahn
 '''
 

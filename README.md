@@ -37,7 +37,7 @@ With the current implementation it's possible to create, update and delete the f
 
 # Examples
 The following parameters are always required so the module knows how to connect to the Foreman [API v2].
-The are replaced in the examples by three dots (...).
+They are replaced in the examples by three dots (...).
 
 ```yaml
 foreman_host: foreman.example.com
@@ -262,6 +262,7 @@ or
   foreman_medium:
     name: CoreOS
     path: http://$release.release.core-os.net
+    os_family: CoreOS
     state: present
     ...
 ```
@@ -310,6 +311,7 @@ Works only if Katello is used
   foreman_ptable:
     name: MyPartitionTable
     layout: 'some layout'
+    os_family: CoreOS
     state: present
     ...
 ```

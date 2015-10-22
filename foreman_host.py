@@ -71,6 +71,10 @@ options:
     description: Location name (Only useful with Katello)
     required: false
     default: None
+  mac:
+    description: MAC address
+    required: false
+    default: None
   managed:
     description: Should Foreman manage the host
     required: false
@@ -158,6 +162,7 @@ def ensure():
     image_name = module.params['image']
     ip = module.params['ip']
     location_name = module.params[LOCATION]
+    mac = module.params['mac']
     managed = module.params['managed']
     medium_name = module.params[MEDIUM]
     operatingsystem_name = module.params[OPERATINGSYSTEM]
@@ -282,6 +287,10 @@ def ensure():
                                     resource_func=theforeman.search_location,
                                     resource_name=location_name)
             data['location_id'] = location.get('id')
+
+        # MAC
+        if mac:
+            data['mac'] = mac
 
         # Managed
         data['managed'] = managed
@@ -432,6 +441,7 @@ def main():
             image=dict(type='str', default=None),
             ip=dict(type='str', default=None),
             location=dict(type='str', default=None),
+            mac=dict(type='str', default=None),
             managed=dict(type='bool', default=False),
             medium=dict(type='str', default=None),
             operatingsystem=dict(type='str', default=None),

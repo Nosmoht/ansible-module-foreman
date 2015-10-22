@@ -63,6 +63,10 @@ options:
     description: Image name to be used if creating from image
     required: false
     default: None
+  ip:
+    description: IP address
+    required: false
+    default: None
   location:
     description: Location name (Only useful with Katello)
     required: false
@@ -152,6 +156,7 @@ def ensure():
     environment_name = module.params[ENVIRONMENT]
     hostgroup_name = module.params[HOSTGROUP]
     image_name = module.params['image']
+    ip = module.params['ip']
     location_name = module.params[LOCATION]
     managed = module.params['managed']
     medium_name = module.params[MEDIUM]
@@ -185,7 +190,8 @@ def ensure():
     try:
         host = theforeman.search_host(data=data)
     except ForemanError as e:
-        module.fail_json(msg='Error while searching host: {0}'.format(e.message))
+        module.fail_json(
+            msg='Error while searching host: {0}'.format(e.message))
 
     if state == 'absent':
         if host:
@@ -193,7 +199,8 @@ def ensure():
                 host = theforeman.delete_host(id=host.get('id'))
                 return True, host
             except ForemanError as e:
-                module.fail_json(msg='Could not delete host: {0}'.format(e.message))
+                module.fail_json(
+                    msg='Could not delete host: {0}'.format(e.message))
         return False, host
 
     if not host:
@@ -226,8 +233,10 @@ def ensure():
             if image_name:
                 compute_resource_images = compute_resource.get('images')
                 if not compute_resource_images:
-                    module.fail_json(msg='Compute Resource {0} has no images'.format(compute_resource_name))
-                images = filter(lambda x: x['name'] == image_name, compute_resource_images)
+                    module.fail_json(
+                        msg='Compute Resource {0} has no images'.format(compute_resource_name))
+                images = filter(lambda x: x['name'] ==
+                                image_name, compute_resource_images)
                 if len(images) == 0:
                     module.fail_json(
                         msg='Could not find image {image_name} in compute resource {compute_resource}'.format(
@@ -262,6 +271,10 @@ def ensure():
                                      resource_func=theforeman.search_hostgroup,
                                      resource_name=hostgroup_name)
             data['hostgroup_id'] = hostgroup.get('id')
+
+        # IP
+        if ip:
+            data['ip'] = ip
 
         # Location
         if location_name:
@@ -312,7 +325,8 @@ def ensure():
         try:
             host = theforeman.create_host(data=data)
         except ForemanError as e:
-            module.fail_json(msg='Could not create host: {0}'.format(e.message))
+            module.fail_json(
+                msg='Could not create host: {0}'.format(e.message))
 
         changed = True
 
@@ -323,25 +337,31 @@ def ensure():
         try:
             host_parameters = theforeman.get_host_parameters(host_id=host_id)
         except ForemanError as e:
-            module.fail_json(msg='Could not get host parameters: {0}'.format(e.message))
+            module.fail_json(
+                msg='Could not get host parameters: {0}'.format(e.message))
 
         # Delete parameters which are not defined
         for host_param in host_parameters:
             host_param_name = host_param.get('name')
-            defined_params = [item for item in parameters if item.get('name') == host_param_name]
+            defined_params = [item for item in parameters if item.get(
+                'name') == host_param_name]
             if not defined_params:
                 try:
-                    theforeman.delete_host_parameter(host_id=host_id, parameter_id=host_param.get('id'))
+                    theforeman.delete_host_parameter(
+                        host_id=host_id, parameter_id=host_param.get('id'))
                 except ForemanError as e:
-                    module.fail_json(msg='Could not delete host parameter {name}: {error}'.format(name=host_param_name))
+                    module.fail_json(msg='Could not delete host parameter {name}: {error}'.format(
+                        name=host_param_name))
                 changed = True
 
         # Create and update parameters
         for param in parameters:
-            host_params = [item for item in host_parameters if item.get('name') == param.get('name')]
+            host_params = [item for item in host_parameters if item.get(
+                'name') == param.get('name')]
             if not host_params:
                 try:
-                    theforeman.create_host_parameter(host_id=host_id, data=param)
+                    theforeman.create_host_parameter(
+                        host_id=host_id, data=param)
                 except ForemanError as e:
                     module.fail_json(
                         msg='Could not create host parameter {param_name}: {error}'.format(param_name=param.get('name'),
@@ -353,11 +373,13 @@ def ensure():
                     param_value = param.get('value')
                     if isinstance(param_value, list):
                         param_value = ','.join(param_value)
-                    # Replace \n seems to be needed. Otherwise some strings are always changed although they look equal
+                    # Replace \n seems to be needed. Otherwise some strings are
+                    # always changed although they look equal
                     if host_value.replace('\n', '') != param_value.replace('\n', ''):
                         try:
                             theforeman.update_host_parameter(host_id=host_id,
-                                                             parameter_id=host_param.get('id'),
+                                                             parameter_id=host_param.get(
+                                                                 'id'),
                                                              data=param)
                         except ForemanError as e:
                             module.fail_json(
@@ -408,13 +430,15 @@ def main():
             environment=dict(type='str', default=None),
             hostgroup=dict(type='str', default=None),
             image=dict(type='str', default=None),
+            ip=dict(type='str', default=None),
             location=dict(type='str', default=None),
             managed=dict(type='bool', default=False),
             medium=dict(type='str', default=None),
             operatingsystem=dict(type='str', default=None),
             organization=dict(type='str', default=None),
             parameters=dict(type='list', default=None),
-            provision_method=dict(type='str', required=False, choices=['build', 'image']),
+            provision_method=dict(type='str', required=False,
+                                  choices=['build', 'image']),
             root_pass=dict(type='str', default=None),
             state=dict(type='str', default='present',
                        choices=['present', 'absent', 'running', 'stopped', 'rebooted']),
@@ -427,7 +451,8 @@ def main():
     )
 
     if not foremanclient_found:
-        module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
+        module.fail_json(
+            msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
     changed, host = ensure()
     module.exit_json(changed=changed, host=host)

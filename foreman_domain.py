@@ -30,6 +30,8 @@ options:
     description: Description of the domain
     required: false
     default: None
+  dns_proxy:
+    description: dns_proxy
   state:
     description: Domain state
     required: false
@@ -77,10 +79,36 @@ else:
     foremanclient_found = True
 
 
+def get_resources(resource_type, resource_specs):
+    result = []
+    for item in resource_specs:
+        search_data = dict()
+        if isinstance(item, dict):
+            for key in item:
+                search_data[key] = item[key]
+        else:
+            search_data['name'] = item
+        try:
+            resource = theforeman.search_resource(resource_type=resource_type, data=search_data)
+            if not resource:
+                module.fail_json(
+                    msg='Could not find resource type {resource_type} defined as {spec}'.format(
+                        resource_type=resource_type,
+                        spec=item))
+            result.append(resource)
+        except ForemanError as e:
+            module.fail_json(msg='Could not search resource type {resource_type} defined as {spec}: {error}'.format(
+                resource_type=resource_type, spec=item, error=e.message))
+    return result
+
+
 def ensure(module):
+    global theforeman
+
     name = module.params['name']
     fullname = module.params['fullname']
     state = module.params['state']
+    dns_proxy = module.params['dns_proxy']
 
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
@@ -100,6 +128,8 @@ def ensure(module):
         module.fail_json(msg='Could not get domain: {0}'.format(e.message))
 
     data['fullname'] = fullname
+    if dns_proxy:
+        data['dns_id'] = get_resources(resource_type='smart_proxies', resource_specs=[dns_proxy])[0].get('id')
 
     if not domain and state == 'present':
         try:
@@ -127,10 +157,13 @@ def ensure(module):
 
 
 def main():
+    global module
+
     module = AnsibleModule(
         argument_spec=dict(
             name=dict(type='str', required=True),
             fullname=dict(type='str', required=False),
+            dns_proxy=dict(type='str', required=False),
             state=dict(type='str', default='present', choices=['present', 'absent']),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),

@@ -46,6 +46,10 @@ options:
     description: Operatingsystem name
     required: False
     default: None
+  parameters:
+    description: List of parameters and values
+    required: false
+    default: None
   partition_table:
     description: Partition table name
     required: False
@@ -136,6 +140,7 @@ def ensure(module):
                                     'medium_id', 'operatingsystem_id', 'subnet_id', 'ptable_id', 'smart_proxy_id']
     hostgroup_updateable_keys = ['puppetclass_id', 'location_id', 'organization_id']
 
+    changed = False
     name = module.params['name']
     architecture_name = module.params[ARCHITECTURE]
     compute_profile_name = module.params[COMPUTE_PROFILE]
@@ -147,6 +152,7 @@ def ensure(module):
     smart_proxy_name = module.params[SMART_PROXY]
     subnet_name = module.params[SUBNET]
     state = module.params['state']
+    parameters = module.params['parameters']
 
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
@@ -241,11 +247,9 @@ def ensure(module):
     if not hostgroup and state == 'present':
         try:
             hostgroup = theforeman.create_hostgroup(data=data)
-            return True, hostgroup
         except ForemanError as e:
             module.fail_json(msg='Could not create hostgroup: {0}'.format(e.message))
-
-    if hostgroup:
+    elif hostgroup:
         if state == 'absent':
             try:
                 hostgroup = theforeman.delete_hostgroup(id=hostgroup.get('id'))
@@ -258,11 +262,67 @@ def ensure(module):
                 for key in hostgroup_nonupdateable_keys:
                     data.pop(key, None)
                 hostgroup = theforeman.update_hostgroup(id=hostgroup.get('id'), data=data)
-                return True, hostgroup
             except ForemanError as e:
                 module.fail_json(msg='Could not update hostgroup: {0}'.format(e.message))
 
-    return False, hostgroup
+    hostgroup_id = hostgroup.get('id')
+
+    # Parameters
+    if parameters:
+        try:
+            hostgroup_parameters = theforeman.get_hostgroup_parameters(hostgroup_id=hostgroup_id)
+        except ForemanError as e:
+            module.fail_json(
+                msg='Could not get hostgroup parameters: {0}'.format(e.message))
+
+        # Delete parameters which are not defined
+        for hostgroup_param in hostgroup_parameters:
+            hostgroup_param_name = hostgroup_param.get('name')
+            defined_params = [item for item in parameters if item.get(
+                'name') == hostgroup_param_name]
+            if not defined_params:
+                try:
+                    theforeman.delete_hostgroup_parameter(
+                        hostgroup_id=hostgroup_id, parameter_id=hostgroup_param.get('id'))
+                except ForemanError as e:
+                    module.fail_json(msg='Could not delete host parameter {name}: {error}'.format(
+                        name=hostgroup_param_name))
+                changed = True
+
+        # Create and update parameters
+        for param in parameters:
+            hostgroup_params = [item for item in hostgroup_parameters if item.get(
+                'name') == param.get('name')]
+            if not hostgroup_params:
+                try:
+                    theforeman.create_hostgroup_parameter(
+                        hostgroup_id=hostgroup_id, data=param)
+                except ForemanError as e:
+                    module.fail_json(
+                        msg='Could not create host parameter {param_name}: {error}'.format(param_name=param.get('name'),
+                                                                                           error=e.message))
+                changed = True
+            else:
+                for hostgroup_param in hostgroup_params:
+                    hostgroup_value = hostgroup_param.get('value')
+                    param_value = param.get('value')
+                    if isinstance(param_value, list):
+                        param_value = ','.join(param_value)
+                    # Replace \n seems to be needed. Otherwise some strings are
+                    # always changed although they look equal
+                    if hostgroup_value.replace('\n', '') != param_value.replace('\n', ''):
+                        try:
+                            theforeman.update_hostgroup_parameter(hostgroup_id=hostgroup_id,
+                                                             parameter_id=hostgroup_param.get(
+                                                                 'id'),
+                                                             data=param)
+                        except ForemanError as e:
+                            module.fail_json(
+                                msg='Could not update host parameter {param_name}: {error}'.format(
+                                    param_name=param.get('name'), error=e.message))
+                        changed = True
+
+    return changed, hostgroup
 
 
 def main():
@@ -275,6 +335,7 @@ def main():
             environment=dict(type='str', default=None),
             medium=dict(type='str', default=None),
             operatingsystem=dict(type='str', default=None),
+            parameters=dict(type='list', default=None),
             partition_table=dict(type='str', default=None),
             smart_proxy=dict(type='str', default=None),
             subnet=dict(type='str', default=None),

@@ -63,6 +63,18 @@ options:
     description: Ending IP Address for IP auto suggestion
     required: False
     default: None
+  dhcp_proxy:
+    description: DHCP smart proxy to use for this subnet
+    required: False
+    default: None
+  dns_proxy:
+    description: DNS smart proxy to use for this subnet
+    required: False
+    default: None
+  tftp_proxy:
+    description: TFTP smart proxy to use for this subnet
+    required: False
+    default: None
   state:
     description: State of subnet
     required: false
@@ -177,6 +189,11 @@ def ensure(module):
         data['to'] = module.params['ip_to']
     if 'domains' in module.params and module.params['domains']:
         data['domains'] = get_resources(resource_type='domains', resource_specs=module.params['domains'])
+    for proxy_type in ['dns', 'dhcp', 'tftp']:
+        key = "{0}_proxy".format(proxy_type)
+        if key in module.params and module.params[key]:
+            id_key = "{0}_id".format(proxy_type)
+            data[id_key] = get_resources(resource_type='smart_proxies', resource_specs=[module.params[key]])[0].get('id')
 
     if not subnet and state == 'present':
         try:
@@ -208,6 +225,8 @@ def main():
 
     module = AnsibleModule(
         argument_spec=dict(
+            dhcp_proxy=dict(type='str', required=False),
+            dns_proxy=dict(type='str', required=False),
             dns_primary=dict(type='str', required=False),
             dns_secondary=dict(type='str', required=False),
             domains=dict(type='list', required=False),
@@ -219,6 +238,7 @@ def main():
             ip_from=dict(type='str', required=False),
             ip_to=dict(type='str', required=False),
             state=dict(type='str', default='present', choices=['present', 'absent']),
+            tftp_proxy=dict(type='str', required=False),
             vlanid=dict(type='str', default=None),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),

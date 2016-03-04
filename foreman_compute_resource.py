@@ -29,6 +29,9 @@ options:
   datacenter: Name of Datacenter (only for Vmware)
     required: false
     default: None
+  description: Description of compute resource
+    required: false
+    default: None
   password:
     description: Password for Ovirt, EC2, Vmware, Openstack. Secret key for EC2
     required: false
@@ -133,6 +136,7 @@ def ensure(module):
     name = module.params['name']
     state = module.params['state']
     provider = module.params['provider']
+    description = module.params['description']
 
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
@@ -160,8 +164,8 @@ def ensure(module):
             return True, compute_resource
 
     data['provider'] = provider
-    provider_params = get_provider_params(provider=provider)
-    for key in provider_params:
+    params = get_provider_params(provider=provider) + ['description']
+    for key in params:
         data[key] = module.params[key]
 
     if state == 'present':
@@ -174,7 +178,7 @@ def ensure(module):
 
         return False, compute_resource
 
-        if not all(data.get(key, None) == compute_resource.get(key, None) for key in provider_params):
+        if not all(data.get(key, None) == compute_resource.get(key, None) for key in params):
             try:
                 compute_resource = theforeman.update_compute_resource(id=compute_resource.get('id'), data=data)
             except ForemanError as e:
@@ -190,6 +194,7 @@ def main():
             name=dict(type='str', required=True),
             access_key=dict(type='str', requireD=False),
             datacenter=dict(type='str', required=False),
+            description=dict(type='str', required=False),
             display_type=dict(type='str', required=False),
             email=dict(type='str', required=False),
             key_path=dict(type='str', required=False),

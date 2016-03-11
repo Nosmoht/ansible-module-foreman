@@ -109,9 +109,8 @@ def ensure(module):
     if not all(compute_attribute.get(key, vm_attributes.get(key)) == vm_attributes.get(key) for key in
                vm_attributes) != 0:
         try:
-            compute_attribute['vm_attrs'] = vm_attributes
             compute_attribute = theforeman.update_compute_attribute(id=compute_attribute.get('id'),
-                                                                    data=compute_attribute)
+                                                                    data=vm_attributes)
             return True, compute_attribute
         except ForemanError as e:
             module.fail_json(msg='Could not update compute attribute: {0}'.format(e.message))

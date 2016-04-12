@@ -46,6 +46,10 @@ options:
     description: Secondary DNS for this subnet
     required: False
     default: None
+  domains:
+    description: Domains in which this subnet is part
+    required: False
+    default: None
   ipam:
     description: Enable IP Address auto suggestion for this subnet
     required: False
@@ -57,6 +61,18 @@ options:
     default: None
   ip_to:
     description: Ending IP Address for IP auto suggestion
+    required: False
+    default: None
+  dhcp_proxy:
+    description: DHCP smart proxy to use for this subnet
+    required: False
+    default: None
+  dns_proxy:
+    description: DNS smart proxy to use for this subnet
+    required: False
+    default: None
+  tftp_proxy:
+    description: TFTP smart proxy to use for this subnet
     required: False
     default: None
   state:
@@ -96,6 +112,8 @@ EXAMPLES = '''
     mask: 255.255.255.0
     dns_primary: 192.168.123.1
     dns_secondary: 192.168.123.2
+    domains:
+      - foo.example.com
     ipam: DHCP
     ip_from: 192.168.123.3
     ip_to: 192.168.123.253
@@ -116,7 +134,32 @@ else:
     foremanclient_found = True
 
 
+def get_resources(resource_type, resource_specs):
+    result = []
+    for item in resource_specs:
+        search_data = dict()
+        if isinstance(item, dict):
+            for key in item:
+                search_data[key] = item[key]
+        else:
+            search_data['name'] = item
+        try:
+            resource = theforeman.search_resource(resource_type=resource_type, data=search_data)
+            if not resource:
+                module.fail_json(
+                    msg='Could not find resource type {resource_type} defined as {spec}'.format(
+                        resource_type=resource_type,
+                        spec=item))
+            result.append(resource)
+        except ForemanError as e:
+            module.fail_json(msg='Could not search resource type {resource_type} defined as {spec}: {error}'.format(
+                resource_type=resource_type, spec=item, error=e.message))
+    return result
+
+
 def ensure(module):
+    global theforeman
+
     name = module.params['name']
     state = module.params['state']
 
@@ -144,6 +187,13 @@ def ensure(module):
         data['from'] = module.params['ip_from']
     if 'ip_to' in module.params:
         data['to'] = module.params['ip_to']
+    if 'domains' in module.params and module.params['domains']:
+        data['domains'] = get_resources(resource_type='domains', resource_specs=module.params['domains'])
+    for proxy_type in ['dns', 'dhcp', 'tftp']:
+        key = "{0}_proxy".format(proxy_type)
+        if key in module.params and module.params[key]:
+            id_key = "{0}_id".format(proxy_type)
+            data[id_key] = get_resources(resource_type='smart_proxies', resource_specs=[module.params[key]])[0].get('id')
 
     if not subnet and state == 'present':
         try:
@@ -160,7 +210,7 @@ def ensure(module):
             except ForemanError as e:
                 module.fail_json(msg='Could not delete subnet: {0}'.format(e.message))
 
-        if not all(data[key] == subnet[key] for key in data):
+        if not all(data[key] == subnet.get(key) for key in data):
             try:
                 subnet = theforeman.update_subnet(id=subnet.get('id'), data=data)
                 return True, subnet
@@ -171,10 +221,15 @@ def ensure(module):
 
 
 def main():
+    global module
+
     module = AnsibleModule(
         argument_spec=dict(
+            dhcp_proxy=dict(type='str', required=False),
+            dns_proxy=dict(type='str', required=False),
             dns_primary=dict(type='str', required=False),
             dns_secondary=dict(type='str', required=False),
+            domains=dict(type='list', required=False),
             gateway=dict(type='str', required=False),
             name=dict(type='str', required=True),
             network=dict(type='str', required=False),
@@ -183,6 +238,7 @@ def main():
             ip_from=dict(type='str', required=False),
             ip_to=dict(type='str', required=False),
             state=dict(type='str', default='present', choices=['present', 'absent']),
+            tftp_proxy=dict(type='str', required=False),
             vlanid=dict(type='str', default=None),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),

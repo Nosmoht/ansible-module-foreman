@@ -169,9 +169,11 @@ def ensure():
     data['description'] = module.params['description']
     data['family'] = module.params['family']
     data['minor'] = module.params['minor']
-    data['media'] = get_resources(resource_type='media', resource_specs=module.params['media'])
+    if module.params['media']:
+        data['media'] = get_resources(resource_type='media', resource_specs=module.params['media'])
 
-    data['ptables'] = get_resources(resource_type='ptables', resource_specs=module.params['ptables'])
+    if module.params['ptables']:
+        data['ptables'] = get_resources(resource_type='ptables', resource_specs=module.params['ptables'])
     data['release_name'] = module.params['release_name']
 
     if not os:

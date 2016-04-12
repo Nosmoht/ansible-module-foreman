@@ -120,7 +120,7 @@ def equal_dict_lists(l1, l2, compare_key='name'):
     return s1.issubset(s2) and s2.issubset(s1)
 
 
-def get_resources(resource_type, resource_func, resource_specs):
+def get_resources(resource_type, resource_func, resource_specs, search_field='name'):
     result = list()
     if not resource_specs:
         return result
@@ -130,7 +130,7 @@ def get_resources(resource_type, resource_func, resource_specs):
             for key in item:
                 search_data[key] = item[key]
         else:
-            search_data['name'] = item
+            search_data[search_field] = item
         try:
             resource = resource_func(data=search_data)
             if not resource:
@@ -212,7 +212,8 @@ def ensure():
         if not snippet:
             data['operatingsystems'] = get_resources(resource_type='operatingsystem',
                                                      resource_func=theforeman.search_operatingsystem,
-                                                     resource_specs=operatingsystems)
+                                                     resource_specs=operatingsystems,
+                                                     search_field='title')
 
         if not config_template:
             try:

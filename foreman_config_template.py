@@ -201,7 +201,13 @@ def ensure():
         data['audit_comment'] = audit_comment
         data['locked'] = locked
         data['snippet'] = snippet
-        data['template_kind_name'] = template_kind_name
+
+        if template_kind_name:
+            res = get_resources(resource_type='template_kinds',
+                                                     resource_func=theforeman.search_template_kind,
+                                                     resource_specs=[template_kind_name])
+            if res:
+                data['template_kind_id'] = res[0]["id"]
 
         if not snippet:
             data['operatingsystems'] = get_resources(resource_type='operatingsystem',

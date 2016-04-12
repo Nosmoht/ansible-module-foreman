@@ -106,7 +106,7 @@ def ensure(module):
         except ForemanError as e:
             module.fail_json(msg='Could not create compute attribute: {0}'.format(e.message))
 
-    if not all(compute_attribute.get(key, vm_attributes.get(key)) == vm_attributes.get(key) for key in
+    if not all(compute_attribute['vm_attrs'].get(key, vm_attributes.get(key)) == vm_attributes.get(key) for key in
                vm_attributes) != 0:
         try:
             compute_attribute = theforeman.update_compute_attribute(id=compute_attribute.get('id'),

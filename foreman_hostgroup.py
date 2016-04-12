@@ -132,6 +132,20 @@ def get_resource(module, resource_type, resource_func, resource_name, search_tit
     return result
 
 
+def split_parent(name):
+    """
+    Split hostgroup name in parent part and name:
+
+    >>> split_parent("a/b/c")
+    ('c', 'a/b')
+    """
+    if '/' in name:
+        parent, name = name.rsplit('/',1)
+    else:
+        return name, None
+    return name, parent
+
+
 def ensure(module):
     # Changes in one of the following keys fails with:
     # <key> is not allowed as nested parameter for hostgroups. Allowed parameters are puppetclass_id, location_id, organization_id
@@ -141,7 +155,8 @@ def ensure(module):
     hostgroup_updateable_keys = ['puppetclass_id', 'location_id', 'organization_id']
 
     changed = False
-    name = module.params['name']
+    full_name = module.params['name']
+    short_name, parent_name = split_parent(full_name)
     architecture_name = module.params[ARCHITECTURE]
     compute_profile_name = module.params[COMPUTE_PROFILE]
     domain_name = module.params[DOMAIN]
@@ -153,7 +168,6 @@ def ensure(module):
     subnet_name = module.params[SUBNET]
     state = module.params['state']
     parameters = module.params['parameters']
-
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
@@ -164,7 +178,7 @@ def ensure(module):
                          username=foreman_user,
                          password=foreman_pass)
 
-    data = {'name': name}
+    data = {'title': full_name, 'name': short_name}
 
     try:
         hostgroup = theforeman.search_hostgroup(data=data)
@@ -243,6 +257,15 @@ def ensure(module):
                               resource_func=theforeman.search_subnet,
                               resource_name=subnet_name)
         data['subnet_id'] = subnet.get('id')
+
+    # Parent
+    if parent_name:
+        environment = get_resource(module=module,
+                                   resource_type=HOSTGROUP,
+                                   resource_func=theforeman.search_hostgroup,
+                                   search_title=True,
+                                   resource_name=parent_name)
+        data['parent_id'] = environment.get('id')
 
     if not hostgroup and state == 'present':
         try:

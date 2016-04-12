@@ -21,7 +21,7 @@ DOCUMENTATION = '''
 module: foreman_user
 short_description: Manage Foreman Users using Foreman API v2
 description:
-- Manage Foreman Architectures using Foreman API v2
+- Manage Foreman users using Foreman API v2
 options:
   admin:
     description: Is an admin account
@@ -33,7 +33,7 @@ options:
     required: false
     default: 'Internal'
   login:
-    description: Name of architecture
+    description: Name of user
     required: true
     default: None
     aliases: ['name']
@@ -58,7 +58,7 @@ options:
     required: false
     default: None
   state:
-    description: State of architecture
+    description: State of user
     required: false
     default: present
     choices: ["present", "absent"]
@@ -83,10 +83,12 @@ author: "Thomas Krahn (@nosmoht)"
 '''
 
 EXAMPLES = '''
-- name: Ensure ARM Architecture is present
-  foreman_architecture:
-    name: ARM
+- name: Ensure foo user is present
+  foreman_user:
+    name: foo
     state: present
+    roles:
+      - "Viewer"
     foreman_user: admin
     foreman_pass: secret
 '''

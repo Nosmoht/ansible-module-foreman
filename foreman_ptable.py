@@ -110,7 +110,7 @@ def ensure():
 
     if ptable and state == 'absent':
         try:
-            ptable = theforeman.delete_architecture(id=ptable.get('id'))
+            ptable = theforeman.delete_partition_table(id=ptable.get('id'))
         except ForemanError as e:
             module.fail_json(msg='Could not delete partition table: {0}'.format(e.message))
         return True, ptable

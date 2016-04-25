@@ -110,10 +110,24 @@ def ensure():
 
     if ptable and state == 'absent':
         try:
-            ptable = theforeman.delete_architecture(id=ptable.get('id'))
+            ptable = theforeman.delete_partition_table(id=ptable.get('id'))
         except ForemanError as e:
             module.fail_json(msg='Could not delete partition table: {0}'.format(e.message))
         return True, ptable
+
+    if ptable and state == 'present':
+        try:
+            ptable = theforeman.get_partition_table(id=ptable.get('id'))
+        except ForemanError as e:
+            module.fail_json(msg='Could not get partition table to update: {0}'.format(e.message))
+        if ptable.get('layout') == layout:
+            return False, ptable
+        else:
+            try:
+                ptable = theforeman.update_partition_table(id=ptable.get('id'),data=data)
+            except ForemanError as e:
+                module.fail_json(msg='Could not update partition table: {0}'.format(e.message))
+            return True, ptable
 
     return False, ptable
 

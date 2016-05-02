@@ -143,6 +143,8 @@ def ensure():
     data['compute_resource_id'] = cid
     data['uuid'] = module.params['uuid']
     data['username'] = module.params['user']
+    if module.params['password']:
+        data['password'] = module.params['password']
     data['architecture_id'] = get_resources(resource_type='architecture',
                                             resource_func=theforeman.search_architecture,
                                             resource_name=module.params['architecture'])['id']
@@ -185,6 +187,7 @@ def main():
             operatingsystem=dict(operatingsystem='str', required=True),
             uuid=dict(type='str', required=True),
             user=dict(type='str', default='root'),
+            password=dict(type='str', default=None),
             state=dict(type='str', default='present', choices=['present', 'absent']),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),

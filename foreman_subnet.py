@@ -55,6 +55,11 @@ options:
     required: False
     default: None
     choices: ['DHCP', 'Internal DB', 'None']),
+  boot_mode:
+    description: Default boot mode for interfaces assigned to this subnet
+    required: False
+    default: None
+    choices: ['DHCP', 'Static']),
   ip_from:
     description: Starting IP Address for IP auto suggestion
     required: False
@@ -115,6 +120,7 @@ EXAMPLES = '''
     domains:
       - foo.example.com
     ipam: DHCP
+    boot_mode: Static
     ip_from: 192.168.123.3
     ip_to: 192.168.123.253
     gateway: 192.168.123.254
@@ -180,7 +186,7 @@ def ensure(module):
     except ForemanError as e:
         module.fail_json(msg='Could not get subnet: {0}'.format(e.message))
 
-    for key in ['dns_primary', 'dns_secondary', 'gateway', 'ipam', 'mask', 'network', 'network_address', 'vlanid']:
+    for key in ['dns_primary', 'dns_secondary', 'gateway', 'ipam', 'boot_mode', 'mask', 'network', 'network_address', 'vlanid']:
         if key in module.params:
             data[key] = module.params[key]
     if 'ip_from' in module.params:
@@ -235,6 +241,7 @@ def main():
             network=dict(type='str', required=False),
             mask=dict(type='str', required=False),
             ipam=dict(type='str', required=False, choices=['DHCP', 'Internal DB', 'None']),
+            boot_mode=dict(type='str', required=False, choices=['DHCP', 'Static']),
             ip_from=dict(type='str', required=False),
             ip_to=dict(type='str', required=False),
             state=dict(type='str', default='present', choices=['present', 'absent']),

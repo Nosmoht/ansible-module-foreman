@@ -99,11 +99,10 @@ def get_resources(resource_type, resource_func, resource_name, search_field='nam
         if not resource:
             module.fail_json(
                 msg='Could not find resource type {resource_type} specified as {name}'.format(
-                    resource_type=resource_type,
-                    name=item))
+                    resource_type=resource_type, name=resource_name))
     except ForemanError as e:
         module.fail_json(msg='Could not search resource type {resource_type} specified as {name}: {error}'.format(
-            resource_type=resource_type, name=item, error=e.message))
+            resource_type=resource_type, name=resource_name, error=e.message))
     return resource
 
 
@@ -117,7 +116,7 @@ def ensure():
     try:
         compute_resource = theforeman.search_compute_resource(data=dict(name=compute_resource))
     except ForemanError as e:
-        module.fail_json(msg='Could not find compute resource {0}: {1}'.format(e.message))
+        module.fail_json(msg='Could not find compute resource {0}: {1}'.format(compute_resource, e.message))
 
     cid = compute_resource['id']
     try:
@@ -144,6 +143,8 @@ def ensure():
     data['compute_resource_id'] = cid
     data['uuid'] = module.params['uuid']
     data['username'] = module.params['user']
+    if module.params['password']:
+        data['password'] = module.params['password']
     data['architecture_id'] = get_resources(resource_type='architecture',
                                             resource_func=theforeman.search_architecture,
                                             resource_name=module.params['architecture'])['id']
@@ -186,6 +187,7 @@ def main():
             operatingsystem=dict(operatingsystem='str', required=True),
             uuid=dict(type='str', required=True),
             user=dict(type='str', default='root'),
+            password=dict(type='str', default=None),
             state=dict(type='str', default='present', choices=['present', 'absent']),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),

@@ -76,6 +76,10 @@ options:
   foreman_pass:
     description: Password to be used to authenticate user on Foreman
     required: true
+  foreman_ssl:
+    description: Enable SSL when connecting to Foreman API
+    required: false
+    default: true
 notes:
 - Requires the python-foreman package to be installed. See https://github.com/Nosmoht/python-foreman.
 version_added: "2.0"
@@ -141,13 +145,15 @@ def ensure(module):
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
     foreman_pass = module.params['foreman_pass']
+    foreman_ssl = module.params['foreman_ssl']
 
     user_options = ['admin', 'auth_source_name', 'firstname', 'lastname', 'mail']
 
     theforeman = Foreman(hostname=foreman_host,
                          port=foreman_port,
                          username=foreman_user,
-                         password=foreman_pass)
+                         password=foreman_pass,
+                         ssl=foreman_ssl)
 
     data = dict(login=login)
 
@@ -214,7 +220,8 @@ def main():
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),
             foreman_user=dict(type='str', required=True),
-            foreman_pass=dict(type='str', required=True)
+            foreman_pass=dict(type='str', required=True),
+            foreman_ssl=dict(type='bool', default=True)
         ),
     )
 

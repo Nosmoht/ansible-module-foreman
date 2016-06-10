@@ -127,13 +127,13 @@ def ensure(module):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            compute_profile=dict(Type='str', required=True),
-            compute_resource=dict(Type='str', required=True),
-            vm_attributes=dict(Type='dict', required=False),
-            foreman_host=dict(Type='str', Default='127.0.0.1'),
-            foreman_port=dict(Type='str', Default='443'),
-            foreman_user=dict(Type='str', required=True),
-            foreman_pass=dict(Type='str', required=True),
+            compute_profile=dict(type='str', required=True),
+            compute_resource=dict(type='str', required=True),
+            vm_attributes=dict(type='dict', required=False),
+            foreman_host=dict(type='str', Default='127.0.0.1'),
+            foreman_port=dict(type='str', Default='443'),
+            foreman_user=dict(type='str', required=True),
+            foreman_pass=dict(type='str', required=True),
             foreman_ssl=dict(type='bool', required=False)
         ),
     )

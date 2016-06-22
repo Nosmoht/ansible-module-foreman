@@ -112,15 +112,18 @@ def get_resources(resource_type, resource_func, resource_name, search_field='nam
 
 def ensure():
     name = module.params['name']
-    compute_resource = module.params['compute_resource']
+    compute_resource_name = module.params['compute_resource']
     state = module.params['state']
 
     data = dict(name=name)
 
     try:
-        compute_resource = theforeman.search_compute_resource(data=dict(name=compute_resource))
+        compute_resource = theforeman.search_compute_resource(data=dict(name=compute_resource_name))
     except ForemanError as e:
-        module.fail_json(msg='Could not find compute resource {0}: {1}'.format(compute_resource, e.message))
+        module.fail_json(msg='Could not find compute resource {0}: {1}'.format(compute_resource_name, e.message))
+
+    if not compute_resource:
+        module.fail_json(msg='Could not find compute resource {0}'.format(compute_resource_name))
 
     cid = compute_resource['id']
     try:

@@ -191,7 +191,7 @@ def main():
             operatingsystem=dict(operatingsystem='str', required=True),
             uuid=dict(type='str', required=True),
             user=dict(type='str', default='root'),
-            password=dict(type='str', default=None),
+            password=dict(type='str', default=None, no_log=True),
             state=dict(type='str', default='present', choices=['present', 'absent']),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),

@@ -215,7 +215,7 @@ def main():
             lastname=dict(type='str', required=False),
             mail=dict(type='str', required=False),
             state=dict(type='str', default='present', choices=['present', 'absent']),
-            password=dict(type='str', required=False),
+            password=dict(type='str', required=False, no_log=True),
             roles=dict(type='list', required=False),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),

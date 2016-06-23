@@ -204,7 +204,7 @@ def main():
             display_type=dict(type='str', required=False),
             email=dict(type='str', required=False),
             key_path=dict(type='str', required=False),
-            password=dict(type='str', required=False),
+            password=dict(type='str', required=False, no_log=True),
             provider=dict(type='str', required=False),
             region=dict(type='str', required=False),
             server=dict(type='str', required=False),

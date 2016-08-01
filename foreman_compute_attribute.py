@@ -134,7 +134,7 @@ def main():
             foreman_port=dict(type='str', Default='443'),
             foreman_user=dict(type='str', required=True),
             foreman_pass=dict(type='str', required=True, no_log=True),
-            foreman_ssl=dict(type='bool', required=False)
+            foreman_ssl=dict(type='bool', required=False, default=True)
         ),
     )
 

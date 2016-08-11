@@ -140,9 +140,11 @@ else:
     foremanclient_found = True
 
 
-def get_resource(resource_type, resource_func, resource_name):
+def get_resource(resource_type, resource_func, resource_name, search_title=False):
     try:
         result = resource_func(data=dict(name=resource_name))
+        if not result:
+            result = resource_func(data=dict(title=resource_name))
         if not result:
             module.fail_json(msg='{resource_type} {resource_name} not found'.format(resource_type=resource_type,
                                                                                     resource_name=resource_name))
@@ -280,7 +282,8 @@ def ensure():
         if hostgroup_name:
             hostgroup = get_resource(resource_type=HOSTGROUP,
                                      resource_func=theforeman.search_hostgroup,
-                                     resource_name=hostgroup_name)
+                                     resource_name=hostgroup_name,
+                                     search_title=True)
             data['hostgroup_id'] = hostgroup.get('id')
 
         # IP

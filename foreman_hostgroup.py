@@ -54,6 +54,10 @@ options:
     description: Partition table name
     required: False
     default: None
+  root_pass:
+    description: root password
+    required: false
+    default: None
   smart_proxy:
     description: Smart Proxy name
     required: False
@@ -168,6 +172,7 @@ def ensure(module):
     medium_name = module.params[MEDIUM]
     operatingsystem_name = module.params[OPERATINGSYSTEM]
     partition_table_name = module.params['partition_table']
+    root_pass = module.params['root_pass']
     smart_proxy_name = module.params[SMART_PROXY]
     subnet_name = module.params[SUBNET]
     state = module.params['state']
@@ -247,6 +252,9 @@ def ensure(module):
                                        resource_func=theforeman.search_partition_table,
                                        resource_name=partition_table_name)
         data['ptable_id'] = partition_table.get('id')
+    # Root password
+    if root_pass:
+        data['root_pass'] = root_pass
 
     # Smart Proxy
     if smart_proxy_name:
@@ -366,6 +374,7 @@ def main():
             operatingsystem=dict(type='str', default=None),
             parameters=dict(type='list', default=None),
             partition_table=dict(type='str', default=None),
+            root_pass=dict(type='str', default=None),
             smart_proxy=dict(type='str', default=None),
             subnet=dict(type='str', default=None),
             state=dict(type='str', default='present', choices=['present', 'absent']),

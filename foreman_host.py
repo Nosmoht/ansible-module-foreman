@@ -414,6 +414,8 @@ def ensure():
         else:
             module.fail_json(
                 msg='Could not get host power information: {0}'.format(e.message))
+    else:
+        power_management_enabled = True
     if power_management_enabled:
         host_power_state = host_power.get('power')
 

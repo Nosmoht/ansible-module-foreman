@@ -426,14 +426,14 @@ def ensure():
             except ForemanError as e:
                 module.fail_json(
                     msg='Could not reboot host: {0}'.format(e.message))
-        elif state == 'running' and host_power_state != 'poweredOn':
+        elif state == 'running' and host_power_state not in ['on','poweredOn']:
             try:
                 theforeman.poweron_host(host_id=host_id)
                 changed = True
             except ForemanError as e:
                 module.fail_json(
                     msg='Could not power on host: {0}'.format(e.message))
-        elif state == 'stopped' and host_power_state != 'poweredOff':
+        elif state == 'stopped' and host_power_state not in ['off','poweredOff']:
             try:
                 theforeman.poweroff_host(host_id=host_id)
                 changed = True

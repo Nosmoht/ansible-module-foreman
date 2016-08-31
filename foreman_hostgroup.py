@@ -54,6 +54,10 @@ options:
     description: Partition table name
     required: False
     default: None
+  realm:
+    description: Realm name
+    required: false
+    default: None
   root_pass:
     description: root password
     required: false
@@ -182,6 +186,7 @@ def ensure(module):
     medium_name = module.params[MEDIUM]
     operatingsystem_name = module.params[OPERATINGSYSTEM]
     partition_table_name = module.params['partition_table']
+    realm_name = module.params['realm']
     root_pass = module.params['root_pass']
     smart_proxy_name = module.params[SMART_PROXY]
     subnet_name = module.params[SUBNET]
@@ -262,6 +267,14 @@ def ensure(module):
                                        resource_func=theforeman.search_partition_table,
                                        resource_name=partition_table_name)
         data['ptable_id'] = str(partition_table.get('id'))
+
+    # Realm
+    if realm_name:
+        realm = get_resource(module=module,
+                             resource_type=REALM,
+                             resource_func=theforeman.search_realm,
+                             resource_name=realm_name)
+        data['realm_id'] = str(realm.get('id'))
     # Root password
     if root_pass:
         data['root_pass'] = root_pass
@@ -385,6 +398,7 @@ def main():
             operatingsystem=dict(type='str', default=None),
             parameters=dict(type='list', default=None),
             partition_table=dict(type='str', default=None),
+            realm=dict(type='str', default=None),
             root_pass=dict(type='str', default=None),
             smart_proxy=dict(type='str', default=None),
             subnet=dict(type='str', default=None),

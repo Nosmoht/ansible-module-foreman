@@ -308,7 +308,7 @@ def ensure(module):
         cmp_hostgroup = filter_hostgroup(hostgroup)
         if not all(data.get(key, None) == cmp_hostgroup.get(key, None) for key in data.keys() + cmp_hostgroup.keys()):
             try:
-                hostgroup = theforeman.update_hostgroup(id=hostgroup.get('id'), data=data)
+                hostgroup = theforeman.update_hostgroup(id=hostgroup.get('id'), data={'hostgroup': data})
                 changed = True
             except ForemanError as e:
                 module.fail_json(msg='Could not update hostgroup: {0}'.format(e.message))

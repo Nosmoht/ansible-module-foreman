@@ -177,32 +177,35 @@ def ensure(module):
     else:
         data['roles'] = []
 
+    changed = False
     if not user and state == 'present':
+        changed = True
         try:
             data['password'] = module.params['password']
-            user = theforeman.create_user(data=data)
-            return True, user
+            if not module.check_mode:
+                user = theforeman.create_user(data=data)
         except ForemanError as e:
             module.fail_json(msg='Could not create user: {0}'.format(e.message))
 
     if user:
         if state == 'absent':
+            changed = True
             try:
-                user, theforeman.delete_user(id=user.get('id'))
-                return True, user
+                if not module.check_mode:
+                    user = theforeman.delete_user(id=user.get('id'))
             except ForemanError as e:
                 module.fail_json(msg='Could not delete user: {0}'.format(e.message))
+        else:
+            if (not all(user.get(key, data[key]) == data[key] for key in user_options)) or (
+                    not equal_roles(defined_roles=data.get('roles'), assigned_roles=user.get('roles'))):
+                changed = True
+                try:
+                    if not module.check_mode:
+                        user = theforeman.update_user(id=user.get('id'), data=data)
+                except ForemanError as e:
+                    module.fail_json(msg='Could not update user: {0}'.format(e.message))
 
-        if (not all(user.get(key, data[key]) == data[key] for key in user_options)) or (
-                not equal_roles(defined_roles=data.get('roles'), assigned_roles=user.get('roles'))):
-            try:
-                # module.fail_json(msg='{0}\n{1}'.format(user.get('roles'), data.get('roles')))
-                user = theforeman.update_user(id=user.get('id'), data=data)
-                return True, user
-            except ForemanError as e:
-                module.fail_json(msg='Could not update user: {0}'.format(e.message))
-
-    return False, user
+    return changed, user
 
 
 def main():
@@ -223,6 +226,7 @@ def main():
             foreman_pass=dict(type='str', required=True, no_log=True),
             foreman_ssl=dict(type='bool', default=True)
         ),
+        supports_check_mode=True,
     )
 
     if not foremanclient_found:

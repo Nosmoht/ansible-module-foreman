@@ -115,7 +115,7 @@ EXAMPLES = '''
 '''
 
 try:
-    from foreman.foreman import *
+    from foreman.foreman import Foreman, ForemanError
 except ImportError:
     foremanclient_found = False
 else:

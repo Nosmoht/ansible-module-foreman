@@ -74,7 +74,7 @@ else:
     foremanclient_found = True
 
 
-def ensure():
+def ensure(module, theforeman):
     name = module.params['name']
     state = module.params['state']
 
@@ -103,9 +103,6 @@ def ensure():
 
 
 def main():
-    global module
-    global theforeman
-
     module = AnsibleModule(
         argument_spec=dict(
             name=dict(type='str', required=True),
@@ -133,7 +130,7 @@ def main():
                          password=foreman_pass,
                          ssl=foreman_ssl)
 
-    changed, arch = ensure()
+    changed, arch = ensure(module, theforeman)
     module.exit_json(changed=changed, architecture=arch)
 
 # import module snippets

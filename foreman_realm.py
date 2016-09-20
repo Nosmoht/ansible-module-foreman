@@ -133,29 +133,35 @@ def ensure(module):
 
     data['realm_type'] = realm_type
     data['realm_proxy_id'] = get_resources(resource_type='smart_proxies', resource_specs=[realm_proxy])[0].get('id')
+
+    changed = False
     if not realm and state == 'present':
+        changed = True
         try:
-            realm = theforeman.create_realm(data=data)
-            return True, realm
+            if not module.check_mode:
+                realm = theforeman.create_realm(data=data)
         except ForemanError as e:
             module.fail_json(msg='Could not create realm: {0}'.format(e.message))
 
-    if realm:
+    elif realm:
         if state == 'absent':
+            changed = True
             try:
-                realm = theforeman.delete_realm(id=realm.get('id'))
-                return True, realm
+                if not module.check_mode:
+                    realm = theforeman.delete_realm(id=realm.get('id'))
             except ForemanError as e:
                 module.fail_json(msg='Could not delete realm: {0}'.format(e.message))
 
         elif not all(data[key] == realm[key] for key in data):
+            changed = True
             try:
-                realm = theforeman.update_realm(id=realm.get('id'), data=data)
-                return True, realm
+                if not module.check_mode:
+                    realm = theforeman.update_realm(id=realm.get('id'), data=data)
+
             except ForemanError as e:
                 module.fail_json(msg='Could not update realm: {0}'.format(e.message))
 
-    return False, realm
+    return changed, realm
 
 
 def main():
@@ -173,6 +179,7 @@ def main():
             foreman_pass=dict(type='str', required=True, no_log=True),
             foreman_ssl=dict(type='bool', default=True)
         ),
+        supports_check_mode=True,
     )
 
     if not foremanclient_found:

@@ -95,28 +95,31 @@ def ensure(module):
 
     data['url'] = url
 
+    changed = False
     if not smart_proxy and state == 'present':
+        changed = True
         try:
-            smart_proxy = theforeman.create_smart_proxy(data=data)
-            return True, smart_proxy
+            if not module.check_mode:
+                smart_proxy = theforeman.create_smart_proxy(data=data)
         except ForemanError as e:
             module.fail_json(msg='Could not create smart proxy: {0}'.format(e.message))
 
     if smart_proxy:
         if state == 'absent':
+            changed = True
             try:
-                smart_proxy = theforeman.delete_smart_proxy(id=smart_proxy.get('id'))
-                return True, smart_proxy
-            except:
-                module.fail_json(msg='Could not delete smart proxy: {0}'.format(e.message))
-
-        if not all(data[key] == smart_proxy[key] for key in updateable_keys):
-            try:
-                smart_proxy = theforeman.update_smart_proxy(id=smart_proxy.get('id'), data=data)
-                return True, smart_proxy
+                if not module.check_mode:
+                    smart_proxy = theforeman.delete_smart_proxy(id=smart_proxy.get('id'))
             except ForemanError as e:
-                module.fail_json(msg='Could not update smart proxy: {0}'.format(e.message))
-    return False, smart_proxy
+                module.fail_json(msg='Could not delete smart proxy: {0}'.format(e.message))
+        else:
+            if not all(data[key] == smart_proxy[key] for key in updateable_keys):
+                try:
+                    if not module.check_mode:
+                        smart_proxy = theforeman.update_smart_proxy(id=smart_proxy.get('id'), data=data)
+                except ForemanError as e:
+                    module.fail_json(msg='Could not update smart proxy: {0}'.format(e.message))
+    return changed, smart_proxy
 
 
 def main():
@@ -131,6 +134,7 @@ def main():
             foreman_pass=dict(type='str', required=True, no_log=True),
             foreman_ssl=dict(type='bool', default=True)
         ),
+        supports_check_mode=True,
     )
 
     if not foremanclient_found:

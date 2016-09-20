@@ -89,7 +89,19 @@ else:
     foremanclient_found = True
 
 
-def ensure():
+def ensure(module):
+    foreman_host = module.params['foreman_host']
+    foreman_port = module.params['foreman_port']
+    foreman_user = module.params['foreman_user']
+    foreman_pass = module.params['foreman_pass']
+    foreman_ssl = module.params['foreman_ssl']
+
+    theforeman = Foreman(hostname=foreman_host,
+                         port=foreman_port,
+                         username=foreman_user,
+                         password=foreman_pass,
+                         ssl=foreman_ssl)
+
     name = module.params['name']
     layout = module.params['layout']
     state = module.params['state']
@@ -105,41 +117,40 @@ def ensure():
     data['layout'] = layout
     data['os_family'] = os_family
 
+    changed = False
     if not ptable and state == 'present':
+        changed = True
         try:
-            ptable = theforeman.create_partition_table(data)
+            if not module.check_mode:
+                ptable = theforeman.create_partition_table(data)
         except ForemanError as e:
             module.fail_json(msg='Could not create partition table: {0}'.format(e.message))
-        return True, ptable
-
-    if ptable and state == 'absent':
-        try:
-            ptable = theforeman.delete_partition_table(id=ptable.get('id'))
-        except ForemanError as e:
-            module.fail_json(msg='Could not delete partition table: {0}'.format(e.message))
-        return True, ptable
-
-    if ptable and state == 'present':
-        try:
-            ptable = theforeman.get_partition_table(id=ptable.get('id'))
-        except ForemanError as e:
-            module.fail_json(msg='Could not get partition table to update: {0}'.format(e.message))
-        if ptable.get('layout') == layout:
-            return False, ptable
-        else:
+    elif ptable:
+        if state == 'absent':
+            changed = True
             try:
-                ptable = theforeman.update_partition_table(id=ptable.get('id'), data=data)
+                if not module.check_mode:
+                    ptable = theforeman.delete_partition_table(id=ptable.get('id'))
             except ForemanError as e:
-                module.fail_json(msg='Could not update partition table: {0}'.format(e.message))
-            return True, ptable
+                module.fail_json(msg='Could not delete partition table: {0}'.format(e.message))
+        elif state == 'present':
+            try:
+                ptable = theforeman.get_partition_table(id=ptable.get('id'))
+            except ForemanError as e:
+                module.fail_json(msg='Could not get partition table to update: {0}'.format(e.message))
 
-    return False, ptable
+            if not ptable.get('layout') == layout:
+                changed = True
+                try:
+                    if not module.check_mode:
+                        ptable = theforeman.update_partition_table(id=ptable.get('id'), data=data)
+                except ForemanError as e:
+                    module.fail_json(msg='Could not update partition table: {0}'.format(e.message))
+
+    return changed, ptable
 
 
 def main():
-    global module
-    global theforeman
-
     module = AnsibleModule(
         argument_spec=dict(
             name=dict(type='str', required=True),
@@ -152,24 +163,13 @@ def main():
             foreman_pass=dict(type='str', required=True, no_log=True),
             foreman_ssl=dict(type='bool', default=True)
         ),
+        supports_check_mode=True,
     )
 
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
-    foreman_host = module.params['foreman_host']
-    foreman_port = module.params['foreman_port']
-    foreman_user = module.params['foreman_user']
-    foreman_pass = module.params['foreman_pass']
-    foreman_ssl = module.params['foreman_ssl']
-
-    theforeman = Foreman(hostname=foreman_host,
-                         port=foreman_port,
-                         username=foreman_user,
-                         password=foreman_pass,
-                         ssl=foreman_ssl)
-
-    changed, ptable = ensure()
+    changed, ptable = ensure(module)
     module.exit_json(changed=changed, ptable=ptable)
 
 

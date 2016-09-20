@@ -86,21 +86,24 @@ def ensure(module):
     except ForemanError as e:
         module.fail_json(msg='Could not get organization: {0}'.format(e.message))
 
+    changed = False
     if not organization and state == 'present':
+        changed = True
         try:
-            theforeman.create_organization(data=data)
-            return True
+            if not module.check_mode:
+                organization = theforeman.create_organization(data=data)
         except ForemanError as e:
             module.fail_json(msg='Could not create organization: {0}'.format(e.message))
 
-    if organization and state == 'absent':
+    elif organization and state == 'absent':
+        changed = True
         try:
-            theforeman.delete_organization(id=organization.get('id'))
-            return True
+            if not module.check_mode:
+                organization = theforeman.delete_organization(id=organization.get('id'))
         except ForemanError as e:
             module.fail_json('Could not delete organization: {0}'.format(e.message))
 
-    return False
+    return changed, organization
 
 
 def main():
@@ -114,13 +117,14 @@ def main():
             foreman_pass=dict(type='str', required=True, no_log=True),
             foreman_ssl=dict(type='bool', default=True)
         ),
+        supports_check_mode=True,
     )
 
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
-    changed = ensure(module)
-    module.exit_json(changed=changed, name=module.params['name'])
+    changed, organization = ensure(module)
+    module.exit_json(changed=changed, organization=organization)
 
 
 from ansible.module_utils.basic import AnsibleModule

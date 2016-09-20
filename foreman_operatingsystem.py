@@ -242,8 +242,8 @@ def main():
     changed, os = ensure()
     module.exit_json(changed=changed, operatingsystem=os)
 
-# import module snippets
-from ansible.module_utils.basic import *
+
+from ansible.module_utils.basic import AnsibleModule
 
 if __name__ == '__main__':
     main()

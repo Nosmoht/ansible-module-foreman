@@ -181,8 +181,8 @@ def main():
     changed, os_default_template = ensure()
     module.exit_json(changed=changed, os_default_template=os_default_template)
 
-# import module snippets
-from ansible.module_utils.basic import *
+
+from ansible.module_utils.basic import AnsibleModule
 
 if __name__ == '__main__':
     main()

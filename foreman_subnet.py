@@ -267,8 +267,8 @@ def main():
     changed, subnet = ensure(module)
     module.exit_json(changed=changed, subnet=subnet)
 
-# import module snippets
-from ansible.module_utils.basic import *
+
+from ansible.module_utils.basic import AnsibleModule
 
 if __name__ == '__main__':
     main()

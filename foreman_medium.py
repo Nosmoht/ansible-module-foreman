@@ -163,8 +163,8 @@ def main():
     changed, medium = ensure(module)
     module.exit_json(changed=changed, medium=medium)
 
-# import module snippets
-from ansible.module_utils.basic import *
+
+from ansible.module_utils.basic import AnsibleModule
 
 if __name__ == '__main__':
     main()

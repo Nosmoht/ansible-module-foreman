@@ -181,8 +181,8 @@ def main():
     changed, realm = ensure(module)
     module.exit_json(changed=changed, realm=realm)
 
-# import module snippets
-from ansible.module_utils.basic import *
+
+from ansible.module_utils.basic import AnsibleModule
 
 if __name__ == '__main__':
     main()

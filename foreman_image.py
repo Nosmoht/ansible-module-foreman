@@ -222,8 +222,8 @@ def main():
     changed, image = ensure()
     module.exit_json(changed=changed, image=image)
 
-# import module snippets
-from ansible.module_utils.basic import *
+
+from ansible.module_utils.basic import AnsibleModule
 
 if __name__ == '__main__':
     main()

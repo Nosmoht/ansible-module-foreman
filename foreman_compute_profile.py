@@ -134,8 +134,8 @@ def main():
     changed, compute_profile = ensure(module)
     module.exit_json(changed=changed, compute_profile=compute_profile)
 
-# import module snippets
-from ansible.module_utils.basic import *
+
+from ansible.module_utils.basic import AnsibleModule
 
 if __name__ == '__main__':
     main()

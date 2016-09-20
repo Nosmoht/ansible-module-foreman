@@ -133,8 +133,8 @@ def main():
     changed, arch = ensure(module, theforeman)
     module.exit_json(changed=changed, architecture=arch)
 
-# import module snippets
-from ansible.module_utils.basic import *
+
+from ansible.module_utils.basic import AnsibleModule
 
 if __name__ == '__main__':
     main()

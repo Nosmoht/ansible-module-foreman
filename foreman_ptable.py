@@ -172,8 +172,8 @@ def main():
     changed, ptable = ensure()
     module.exit_json(changed=changed, ptable=ptable)
 
-# import module snippets
-from ansible.module_utils.basic import *
+
+from ansible.module_utils.basic import AnsibleModule
 
 if __name__ == '__main__':
     main()

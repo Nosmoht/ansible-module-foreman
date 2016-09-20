@@ -82,7 +82,19 @@ else:
     foremanclient_found = True
 
 
-def ensure():
+def ensure(module):
+    foreman_host = module.params['foreman_host']
+    foreman_port = module.params['foreman_port']
+    foreman_user = module.params['foreman_user']
+    foreman_pass = module.params['foreman_pass']
+    foreman_ssl = module.params['foreman_ssl']
+
+    theforeman = Foreman(hostname=foreman_host,
+                         port=foreman_port,
+                         username=foreman_user,
+                         password=foreman_pass,
+                         ssl=foreman_ssl)
+
     os_name = module.params['operatingsystem']
     config_template_name = module.params['config_template']
     template_kind_name = module.params['template_kind']
@@ -123,32 +135,33 @@ def ensure():
             os_default_template = item
             break
 
-    if state == 'absent':
-        if os_default_template:
+    changed = False
+    if os_default_template:
+        if state == 'absent':
+            changed = True
             try:
-                os_default_template = theforeman.delete_operatingsystem_default_template(id=os.get('id'),
-                                                                                         template_id=os_default_template.get(
-                                                                                             'id'))
-            except:
+                if not module.check_mode:
+                    os_default_template = theforeman.delete_operatingsystem_default_template(id=os.get('id'),
+                                                                                             template_id=os_default_template.get(
+                                                                                                 'id'))
+            except ForemanError as e:
                 module.fail_json(msg='Could not delete operatingsystem default template: {0}'.format(e.message))
-            return True, os_default_template
-        return False, os_default_template
 
-    if not os_default_template:
-        try:
-            os_default_template = theforeman.create_operatingsystem_default_template(id=os.get('id'), data=dict(
-                config_template_id=config_template.get('id'), template_kind_id=config_template.get('template_kind_id')))
-        except ForemanError as e:
-            module.fail_json(msg='Could not create operatingsystem default template: {0}'.format(e.message))
-        return True, os_default_template
-
-    return False, os_default_template
+    else:
+        if state == 'present':
+            changed = True
+            try:
+                if not module.check_mode:
+                    os_default_template = theforeman.create_operatingsystem_default_template(
+                        id=os.get('id'), data=dict(
+                            config_template_id=config_template.get('id'),
+                            template_kind_id=config_template.get('template_kind_id')))
+            except ForemanError as e:
+                module.fail_json(msg='Could not create operatingsystem default template: {0}'.format(e.message))
+    return changed, os_default_template
 
 
 def main():
-    global module
-    global theforeman
-
     module = AnsibleModule(
         argument_spec=dict(
             operatingsystem=dict(type='str', required=True),
@@ -161,24 +174,13 @@ def main():
             foreman_pass=dict(type='str', required=True, no_log=True),
             foreman_ssl=dict(type='bool', default=True)
         ),
+        supports_check_mode=True,
     )
 
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
-    foreman_host = module.params['foreman_host']
-    foreman_port = module.params['foreman_port']
-    foreman_user = module.params['foreman_user']
-    foreman_pass = module.params['foreman_pass']
-    foreman_ssl = module.params['foreman_ssl']
-
-    theforeman = Foreman(hostname=foreman_host,
-                         port=foreman_port,
-                         username=foreman_user,
-                         password=foreman_pass,
-                         ssl=foreman_ssl)
-
-    changed, os_default_template = ensure()
+    changed, os_default_template = ensure(module)
     module.exit_json(changed=changed, os_default_template=os_default_template)
 
 

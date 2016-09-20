@@ -114,6 +114,7 @@ def ensure(module):
                 module.fail_json(msg='Could not delete smart proxy: {0}'.format(e.message))
         else:
             if not all(data[key] == smart_proxy[key] for key in updateable_keys):
+                changed = True
                 try:
                     if not module.check_mode:
                         smart_proxy = theforeman.update_smart_proxy(id=smart_proxy.get('id'), data=data)

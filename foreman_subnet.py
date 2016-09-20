@@ -192,7 +192,8 @@ def ensure(module):
     except ForemanError as e:
         module.fail_json(msg='Could not get subnet: {0}'.format(e.message))
 
-    for key in ['dns_primary', 'dns_secondary', 'gateway', 'ipam', 'boot_mode', 'mask', 'network', 'network_address', 'vlanid']:
+    for key in ['dns_primary', 'dns_secondary', 'gateway', 'ipam', 'boot_mode', 'mask', 'network', 'network_address',
+                'vlanid']:
         if key in module.params:
             data[key] = module.params[key]
     if 'ip_from' in module.params:
@@ -205,7 +206,8 @@ def ensure(module):
         key = "{0}_proxy".format(proxy_type)
         if key in module.params and module.params[key]:
             id_key = "{0}_id".format(proxy_type)
-            data[id_key] = get_resources(resource_type='smart_proxies', resource_specs=[module.params[key]])[0].get('id')
+            data[id_key] = get_resources(resource_type='smart_proxies', resource_specs=[module.params[key]])[0].get(
+                'id')
 
     if not subnet and state == 'present':
         try:

@@ -146,7 +146,6 @@ def ensure(module):
             except ForemanError as e:
                 module.fail_json(msg='Could not update hostgroup: {0}'.format(e.message))
 
-
     return False
 
 

@@ -128,7 +128,7 @@ def ensure():
             return False, ptable
         else:
             try:
-                ptable = theforeman.update_partition_table(id=ptable.get('id'),data=data)
+                ptable = theforeman.update_partition_table(id=ptable.get('id'), data=data)
             except ForemanError as e:
                 module.fail_json(msg='Could not update partition table: {0}'.format(e.message))
             return True, ptable

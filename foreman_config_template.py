@@ -210,8 +210,8 @@ def ensure():
 
         if template_kind_name:
             res = get_resources(resource_type='template_kinds',
-                                                     resource_func=theforeman.search_template_kind,
-                                                     resource_specs=[template_kind_name])
+                                resource_func=theforeman.search_template_kind,
+                                resource_specs=[template_kind_name])
             if res:
                 data['template_kind_id'] = res[0]["id"]
 

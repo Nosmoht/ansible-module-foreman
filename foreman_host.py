@@ -249,7 +249,7 @@ def ensure():
                     module.fail_json(
                         msg='Compute Resource {0} has no images'.format(compute_resource_name))
                 images = filter(lambda x: x['name'] ==
-                                image_name, compute_resource_images)
+                                          image_name, compute_resource_images)
                 if len(images) == 0:
                     module.fail_json(
                         msg='Could not find image {image_name} in compute resource {compute_resource}'.format(
@@ -426,14 +426,14 @@ def ensure():
             except ForemanError as e:
                 module.fail_json(
                     msg='Could not reboot host: {0}'.format(e.message))
-        elif state == 'running' and host_power_state not in ['on','poweredOn']:
+        elif state == 'running' and host_power_state not in ['on', 'poweredOn']:
             try:
                 theforeman.poweron_host(host_id=host_id)
                 changed = True
             except ForemanError as e:
                 module.fail_json(
                     msg='Could not power on host: {0}'.format(e.message))
-        elif state == 'stopped' and host_power_state not in ['off','poweredOff']:
+        elif state == 'stopped' and host_power_state not in ['off', 'poweredOff']:
             try:
                 theforeman.poweroff_host(host_id=host_id)
                 changed = True

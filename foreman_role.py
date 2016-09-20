@@ -98,22 +98,25 @@ def ensure(module):
     except ForemanError as e:
         module.fail_json(msg='Could not get role: {0}'.format(e.message))
 
+    changed = False
     if not role and state == 'present':
+        changed = True
         try:
-            role = theforeman.create_role(data=data)
-            return True, role
+            if not module.check_mode:
+                role = theforeman.create_role(data=data)
         except ForemanError as e:
             module.fail_json(msg='Could not create role: {0}'.format(e.message))
 
-    if role:
+    elif role:
         if state == 'absent':
+            changed = True
             try:
-                role = theforeman.delete_role(id=role.get('id'))
-                return True, role
+                if not module.check_mode:
+                    role = theforeman.delete_role(id=role.get('id'))
             except ForemanError as e:
                 module.fail_json(msg='Could not delete role: {0}'.format(e.message))
 
-    return False, role
+    return changed, role
 
 
 def main():
@@ -127,6 +130,7 @@ def main():
             foreman_pass=dict(type='str', required=True, no_log=True),
             foreman_ssl=dict(type='bool', default=True)
         ),
+        supports_check_mode=True,
     )
 
     if not foremanclient_found:

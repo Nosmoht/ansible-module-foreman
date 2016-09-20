@@ -213,22 +213,24 @@ def ensure(module):
     if not subnet and state == 'present':
         changed = True
         try:
-            subnet = theforeman.create_subnet(data=data)
+            if not module.check_mode:
+                subnet = theforeman.create_subnet(data=data)
         except ForemanError as e:
             module.fail_json(msg='Could not create subnet: {0}'.format(e.message))
-
-    if subnet:
+    elif subnet:
         if state == 'absent':
             changed = True
             try:
-                subnet = theforeman.delete_subnet(id=subnet.get('id'))
+                if not module.check_mode:
+                    subnet = theforeman.delete_subnet(id=subnet.get('id'))
             except ForemanError as e:
                 module.fail_json(msg='Could not delete subnet: {0}'.format(e.message))
         else:
             if not all(data[key] == subnet.get(key) for key in data):
                 changed = True
                 try:
-                    subnet = theforeman.update_subnet(id=subnet.get('id'), data=data)
+                    if not module.check_mode:
+                        subnet = theforeman.update_subnet(id=subnet.get('id'), data=data)
                 except ForemanError as e:
                     module.fail_json(msg='Could not update subnet: {0}'.format(e.message))
 

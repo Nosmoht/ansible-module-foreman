@@ -209,29 +209,30 @@ def ensure(module):
             data[id_key] = get_resources(resource_type='smart_proxies', resource_specs=[module.params[key]])[0].get(
                 'id')
 
+    changed = False
     if not subnet and state == 'present':
+        changed = True
         try:
             subnet = theforeman.create_subnet(data=data)
-            return True, subnet
         except ForemanError as e:
             module.fail_json(msg='Could not create subnet: {0}'.format(e.message))
 
     if subnet:
         if state == 'absent':
+            changed = True
             try:
                 subnet = theforeman.delete_subnet(id=subnet.get('id'))
-                return True, subnet
             except ForemanError as e:
                 module.fail_json(msg='Could not delete subnet: {0}'.format(e.message))
+        else:
+            if not all(data[key] == subnet.get(key) for key in data):
+                changed = True
+                try:
+                    subnet = theforeman.update_subnet(id=subnet.get('id'), data=data)
+                except ForemanError as e:
+                    module.fail_json(msg='Could not update subnet: {0}'.format(e.message))
 
-        if not all(data[key] == subnet.get(key) for key in data):
-            try:
-                subnet = theforeman.update_subnet(id=subnet.get('id'), data=data)
-                return True, subnet
-            except ForemanError as e:
-                module.fail_json(msg='Could not update subnet: {0}'.format(e.message))
-
-    return False, subnet
+    return changed, subnet
 
 
 def main():
@@ -261,6 +262,7 @@ def main():
             foreman_pass=dict(type='str', required=True, no_log=True),
             foreman_ssl=dict(type='bool', default=True)
         ),
+        supports_check_mode=True,
     )
 
     if not foremanclient_found:

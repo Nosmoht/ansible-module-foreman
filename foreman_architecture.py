@@ -50,9 +50,8 @@ options:
     description: Enable SSL when connecting to Foreman API
     required: false
     default: true
-notes:
-- Requires the python-foreman package to be installed. See https://github.com/Nosmoht/python-foreman.
-version_added: "2.0"
+requires:
+- python-foreman > 0.14.0
 author: "Thomas Krahn (@nosmoht)"
 '''
 

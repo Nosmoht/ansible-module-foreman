@@ -118,28 +118,33 @@ def ensure(module):
     data['path'] = path
     data['os_family'] = os_family
 
+    changed = False
     if not medium and state == 'present':
+        changed = True
         try:
-            medium = theforeman.create_medium(data=data)
-            return True, medium
+            if not module.check_mode:
+                medium = theforeman.create_medium(data=data)
         except ForemanError as e:
             module.fail_json(msg='Could not create medium: {0}'.format(e.message))
 
-    if medium:
+    elif medium:
         if state == 'absent':
+            changed = True
             try:
-                medium = theforeman.delete_medium(id=medium.get('id'))
-                return True, medium
+                if not module.check_mode:
+                    medium = theforeman.delete_medium(id=medium.get('id'))
             except ForemanError as e:
                 module.fail_json('Could not delete medium: {0}'.format(e.message))
-        if medium.get('path') != path or medium.get('os_family') != os_family:
-            try:
-                medium = theforeman.update_medium(id=medium.get('id'), data=data)
-                return True, medium
-            except ForemanError as e:
-                module.fail_json(msg='Could not update medium: {0}'.format(e.message))
+        else:
+            if medium.get('path') != path or medium.get('os_family') != os_family:
+                changed = True
+                try:
+                    if not module.check_mode:
+                        medium = theforeman.update_medium(id=medium.get('id'), data=data)
+                except ForemanError as e:
+                    module.fail_json(msg='Could not update medium: {0}'.format(e.message))
 
-    return False, medium
+    return changed, medium
 
 
 def main():
@@ -155,6 +160,7 @@ def main():
             foreman_pass=dict(type='str', required=True, no_log=True),
             foreman_ssl=dict(type='bool', default=True)
         ),
+        supports_check_mode=True,
     )
 
     if not foremanclient_found:

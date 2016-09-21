@@ -121,7 +121,7 @@ def equal_dict_lists(l1, l2, compare_key='name'):
     return s1.issubset(s2) and s2.issubset(s1)
 
 
-def get_resources(resource_type, resource_specs):
+def get_resources(module, theforeman, resource_type, resource_specs):
     result = []
     for item in resource_specs:
         search_data = dict()
@@ -144,7 +144,19 @@ def get_resources(resource_type, resource_specs):
     return result
 
 
-def ensure():
+def ensure(module):
+    foreman_host = module.params['foreman_host']
+    foreman_port = module.params['foreman_port']
+    foreman_user = module.params['foreman_user']
+    foreman_pass = module.params['foreman_pass']
+    foreman_ssl = module.params['foreman_ssl']
+
+    theforeman = Foreman(hostname=foreman_host,
+                         port=foreman_port,
+                         username=foreman_user,
+                         password=foreman_pass,
+                         ssl=foreman_ssl)
+
     comparable_keys = ['description', 'family', 'major', 'minor', 'release_name']
     name = module.params['name']
     state = module.params['state']
@@ -159,51 +171,59 @@ def ensure():
     except ForemanError as e:
         module.fail_json(msg='Could not get operatingsystem: {0}'.format(e.message))
 
-    if state == 'absent':
-        if os:
+    if state != 'absent':
+        data['architectures'] = get_resources(module=module,
+                                              theforeman=theforeman,
+                                              resource_type='architectures',
+                                              resource_specs=module.params['architectures'])
+        data['description'] = module.params['description']
+        data['family'] = module.params['family']
+        data['minor'] = module.params['minor']
+        if module.params['media']:
+            data['media'] = get_resources(module=module,
+                                          theforeman=theforeman,
+                                          resource_type='media',
+                                          resource_specs=module.params['media'])
+
+        if module.params['ptables']:
+            data['ptables'] = get_resources(module=module,
+                                            theforeman=theforeman,
+                                            resource_type='ptables',
+                                            resource_specs=module.params['ptables'])
+        data['release_name'] = module.params['release_name']
+
+    changed = False
+    if not os:
+        if state == 'present':
+            changed = True
             try:
-                os = theforeman.delete_operatingsystem(id=os.get('id'))
-                return True, os
+                if not module.check_mode:
+                    os = theforeman.create_operatingsystem(data=data)
+            except ForemanError as e:
+                module.fail_json(msg='Could not create operatingsystem: {0}'.format(e.message))
+    else:
+        if state == 'absent':
+            changed = True
+            try:
+                if not module.check_mode:
+                    os = theforeman.delete_operatingsystem(id=os.get('id'))
             except ForemanError as e:
                 module.fail_json(msg='Could not delete operatingsystem: {0}'.format(e.message))
-
-        return False, os
-
-    data['architectures'] = get_resources(resource_type='architectures', resource_specs=module.params['architectures'])
-    data['description'] = module.params['description']
-    data['family'] = module.params['family']
-    data['minor'] = module.params['minor']
-    if module.params['media']:
-        data['media'] = get_resources(resource_type='media', resource_specs=module.params['media'])
-
-    if module.params['ptables']:
-        data['ptables'] = get_resources(resource_type='ptables', resource_specs=module.params['ptables'])
-    data['release_name'] = module.params['release_name']
-
-    if not os:
-        try:
-            os = theforeman.create_operatingsystem(data=data)
-            return True, os
-        except ForemanError as e:
-            module.fail_json(msg='Could not create operatingsystem: {0}'.format(e.message))
-
-    if (not all(data[key] == os.get(key, data[key]) for key in comparable_keys)) or (
-            not equal_dict_lists(l1=data.get('architectures', None), l2=os.get('architectures', None))) or (
-            not equal_dict_lists(l1=data.get('media', None), l2=os.get('media', None))) or (
-            not equal_dict_lists(l1=data.get('ptables', None), l2=os.get('ptables', None))):
-        try:
-            os = theforeman.update_operatingsystem(id=os.get('id'), data=data)
-            return True, os
-        except ForemanError as e:
-            module.fail_json(msg='Could not update operatingsystem: {0}'.format(e.message))
-
-    return False, os
+        else:
+            if (not all(data[key] == os.get(key, data[key]) for key in comparable_keys)) or (
+                    not equal_dict_lists(l1=data.get('architectures', None), l2=os.get('architectures', None))) or (
+                    not equal_dict_lists(l1=data.get('media', None), l2=os.get('media', None))) or (
+                    not equal_dict_lists(l1=data.get('ptables', None), l2=os.get('ptables', None))):
+                changed = True
+                try:
+                    if not module.check_mode:
+                        os = theforeman.update_operatingsystem(id=os.get('id'), data=data)
+                except ForemanError as e:
+                    module.fail_json(msg='Could not update operatingsystem: {0}'.format(e.message))
+    return changed, os
 
 
 def main():
-    global module
-    global theforeman
-
     module = AnsibleModule(
         argument_spec=dict(
             architectures=dict(type='list', required=False),
@@ -222,24 +242,13 @@ def main():
             foreman_pass=dict(type='str', required=True, no_log=True),
             foreman_ssl=dict(type='bool', default=True)
         ),
+        supports_check_mode=True,
     )
 
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
-    foreman_host = module.params['foreman_host']
-    foreman_port = module.params['foreman_port']
-    foreman_user = module.params['foreman_user']
-    foreman_pass = module.params['foreman_pass']
-    foreman_ssl = module.params['foreman_ssl']
-
-    theforeman = Foreman(hostname=foreman_host,
-                         port=foreman_port,
-                         username=foreman_user,
-                         password=foreman_pass,
-                         ssl=foreman_ssl)
-
-    changed, os = ensure()
+    changed, os = ensure(module)
     module.exit_json(changed=changed, operatingsystem=os)
 
 

@@ -58,7 +58,7 @@ options:
   boot_mode:
     description: Default boot mode for interfaces assigned to this subnet
     required: False
-    default: None
+    default: 'DHCP'
     choices: ['DHCP', 'Static']),
   ip_from:
     description: Starting IP Address for IP auto suggestion
@@ -249,7 +249,7 @@ def main():
             network=dict(type='str', required=False),
             mask=dict(type='str', required=False),
             ipam=dict(type='str', required=False, choices=['DHCP', 'Internal DB', 'None']),
-            boot_mode=dict(type='str', required=False, choices=['DHCP', 'Static']),
+            boot_mode=dict(type='str', required=False, choices=['DHCP', 'Static'], default='DHCP'),
             ip_from=dict(type='str', required=False),
             ip_to=dict(type='str', required=False),
             state=dict(type='str', default='present', choices=['present', 'absent']),

@@ -56,7 +56,7 @@ author: "Thomas Krahn (@nosmoht)"
 '''
 
 try:
-    from foreman.foreman import Foreman, ForemanError
+    from foreman.foreman import *
 except ImportError:
     foremanclient_found = False
 else:

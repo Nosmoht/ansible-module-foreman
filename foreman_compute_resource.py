@@ -182,6 +182,9 @@ def ensure(module):
                 module.fail_json(msg='Could not create compute resource: {0}'.format(e.message))
             return True, compute_resource
 
+        # Foreman's API doesn't return the password we can't tell if we need to
+        # change it
+        data['password'] = None
         if not all(data.get(key, None) == compute_resource.get(key, None) for key in params):
             try:
                 compute_resource = theforeman.update_compute_resource(id=compute_resource.get('id'), data=data)

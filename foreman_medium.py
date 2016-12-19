@@ -164,7 +164,7 @@ def main():
     module.exit_json(changed=changed, medium=medium)
 
 
-from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.basic import *
 
 if __name__ == '__main__':
     main()

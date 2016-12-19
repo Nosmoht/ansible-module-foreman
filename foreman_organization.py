@@ -123,7 +123,7 @@ def main():
     module.exit_json(changed=changed, name=module.params['name'])
 
 
-from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.basic import *
 
 if __name__ == '__main__':
     main()

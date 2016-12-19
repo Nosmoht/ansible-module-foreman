@@ -145,7 +145,7 @@ def main():
     module.exit_json(changed=changed, compute_attribute=compute_attribute)
 
 
-from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.basic import *
 
 if __name__ == '__main__':
     main()

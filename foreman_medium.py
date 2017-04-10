@@ -25,7 +25,7 @@ description:
 options:
   name:
     description:
-    - Medium name
+    - Medium name, a combination of name '*' and state 'absent' can be used to clean up, by deleting all present media
     required: true
   path:
     description:
@@ -37,7 +37,7 @@ options:
     required: false
   state:
     description:
-    - Medium state
+    - Medium state, , a combination of name '*' and state 'absent' can be used to clean up, by deleting all present media
     required: false
     default: 'present'
     choices: ['present', 'absent']

@@ -111,20 +111,14 @@ def ensure(module):
     data = {'name': name}
 
 
-    if name == '*' :
+    if name == '*' and state == 'absent':
         try:
             all_media_list = theforeman.get_resources(resource_type=MEDIA)
+            for element in all_media_list:
+                theforeman.delete_medium(id=element.get('id'))
             return True, all_media_list
         except ForemanError as e:
-            module.fail_json(msg='Could not find media: {0}'.format(e.message))
-
-    #     # try:
-    #     #     for element in all_media_list:
-    #     #         theforeman.delete_medium(id=element.get('id'))
-    #     #         return True, element    
-    #     # except ForemanError as e:
-    #     #     module.fail_json(msg='Could not delete media: {0}'.format(e.message))    
-
+            module.fail_json(msg='Error in deleting all existing media: {0}'.format(e.message))
 
     try:
         medium = theforeman.search_medium(data=data)

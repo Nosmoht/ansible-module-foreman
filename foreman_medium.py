@@ -25,7 +25,7 @@ description:
 options:
   name:
     description:
-    - Medium name
+    - Medium name, a combination of name '*' and state 'absent' can be used to clean up, by deleting all present media
     required: true
   path:
     description:
@@ -37,7 +37,7 @@ options:
     required: false
   state:
     description:
-    - Medium state
+    - Medium state, , a combination of name '*' and state 'absent' can be used to clean up, by deleting all present media
     required: false
     default: 'present'
     choices: ['present', 'absent']
@@ -110,6 +110,16 @@ def ensure(module):
 
     data = {'name': name}
 
+
+    if name == '*' and state == 'absent':
+        try:
+            all_media_list = theforeman.get_resources(resource_type=MEDIA)
+            for element in all_media_list:
+                theforeman.delete_medium(id=element.get('id'))
+            return True, all_media_list
+        except ForemanError as e:
+            module.fail_json(msg='Error in deleting all existing media: {0}'.format(e.message))
+
     try:
         medium = theforeman.search_medium(data=data)
     except ForemanError as e:
@@ -140,6 +150,7 @@ def ensure(module):
                 module.fail_json(msg='Could not update medium: {0}'.format(e.message))
 
     return False, medium
+
 
 
 def main():

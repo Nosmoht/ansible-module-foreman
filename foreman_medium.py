@@ -41,13 +41,13 @@ options:
     required: false
     default: 'present'
     choices: ['present', 'absent']
-  organizations:
-    description:
-    - List of organization the medium should be assigned to
-    required: false
   locations:
     description:
     - List of locations the medium should be assigned to
+    required: false  
+  organizations:
+    description:
+    - List of organization the medium should be assigned to
     required: false
   foreman_host:
     description:
@@ -83,11 +83,11 @@ EXAMPLES = '''
     name: CentOS mirror
     path: http://mirror.centos.org/centos/$version/os/$arch
     os_family: RedHat
+    locations:
+    - Munich
     organizations:
     - Development
     - DevOps
-    locations:
-    - Munich
     state: present
     foreman_user: admin
     foreman_pass: secret

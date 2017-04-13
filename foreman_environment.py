@@ -31,6 +31,12 @@ options:
     required: false
     default: present
     choices: ["present", "absent"]
+  organizations:
+    description: List of organizations the environement should be assigned to
+    required: false
+  locations:
+    description: List of locations the environement should be assigned to
+    required: false      
   foreman_host:
     description: Hostname or IP address of Foreman system
     required: false
@@ -60,6 +66,11 @@ EXAMPLES = '''
   foreman_environment:
     name: Production
     state: present
+    organizations:
+    - Prod INC
+    locations:
+    - New York City
+    - Washington DC     
     foreman_host: 127.0.0.1
     foreman_port: 443
     foreman_user: admin
@@ -73,10 +84,39 @@ try:
 except ImportError:
     foremanclient_found = False
 
+import logging
+
+def get_organization_ids(module, theforeman, organizations):
+    result = []
+    for i in range(0, len(organizations)):
+        try:
+            organization = theforeman.search_organization(data={'name': organizations[i]})
+            if not organization:
+                module.fail_json('Could not find Organization {0}'.format(organizations[i]))
+            result.append(organization.get('id'))
+        except ForemanError as e:
+            module.fail_json('Could not get Organizations: {0}'.format(e.message))
+    return result
+
+
+def get_location_ids(module, theforeman, locations):
+    result = []
+    for i in range(0, len(locations)):
+        try:
+            location = theforeman.search_location(data={'name':locations[i]})
+            if not location:
+                module.fail_json('Could not find Location {0}'.format(locations[i]))
+            result.append(location.get('id'))
+        except ForemanError as e:
+            module.fail_json('Could not get Locations: {0}'.format(e.message))
+    return result
+
 
 def ensure(module):
     name = module.params['name']
     state = module.params['state']
+    organizations = module.params['organizations']
+    locations = module.params['locations']
 
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
@@ -96,6 +136,13 @@ def ensure(module):
         env = theforeman.search_environment(data=data)
     except ForemanError as e:
         module.fail_json(msg='Could not get environment: {0}'.format(e.message))
+        
+    if organizations:
+         data['organization_ids'] = get_organization_ids(module, theforeman, organizations)
+
+    if locations:
+         data['location_ids'] = get_location_ids(module, theforeman, locations)
+
 
     if not env and state == 'present':
         try:
@@ -115,10 +162,13 @@ def ensure(module):
 
 
 def main():
+    logging.basicConfig(filename='/tmp/ansible.log', level=logging.DEBUG)
     module = AnsibleModule(
         argument_spec=dict(
             name=dict(type='str', required=True),
             state=dict(type='str', default='present', choices=['present', 'absent']),
+            organizations=dict(type='list', required=False),
+            locations=dict(type='list', required=False),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),
             foreman_user=dict(type='str', required=True),

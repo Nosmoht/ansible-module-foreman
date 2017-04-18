@@ -37,7 +37,7 @@ options:
     default: None
   organizations: List of organizations the compute resource should be assigned to
     required: false
-    default: None  
+    default: None
   password:
     description: Password for Ovirt, EC2, Vmware, Openstack. Secret key for EC2
     required: false

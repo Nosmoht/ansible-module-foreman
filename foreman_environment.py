@@ -84,8 +84,6 @@ try:
 except ImportError:
     foremanclient_found = False
 
-import logging
-
 def get_organization_ids(module, theforeman, organizations):
     result = []
     for i in range(0, len(organizations)):
@@ -162,7 +160,6 @@ def ensure(module):
 
 
 def main():
-    logging.basicConfig(filename='/tmp/ansible.log', level=logging.DEBUG)
     module = AnsibleModule(
         argument_spec=dict(
             name=dict(type='str', required=True),

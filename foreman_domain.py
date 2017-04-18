@@ -37,6 +37,12 @@ options:
     required: false
     default: present
     choices: ["present", "absent"]
+  organizations:
+    description: List of organizations the domain should be assigned to
+    required: false
+  locations:
+    description: List of locations the domain should be assigned to
+    required: false  
   foreman_host:
     description: Hostname or IP address of Foreman system
     required: false
@@ -69,6 +75,11 @@ EXAMPLES = '''
     name: example.com
     fullname: Example domain
     state: present
+    organizations:
+    - Torchlight
+    locations:
+    - Cardiff
+    - London
     foreman_host: 127.0.0.1
     foreman_port: 443
     foreman_user: admin
@@ -105,6 +116,30 @@ def get_resources(resource_type, resource_specs):
                 resource_type=resource_type, spec=item, error=e.message))
     return result
 
+def get_organization_ids(module, theforeman, organizations):
+    result = []
+    for i in range(0, len(organizations)):
+        try:
+            organization = theforeman.search_organization(data={'name': organizations[i]})
+            if not organization:
+                module.fail_json('Could not find Organization {0}'.format(organizations[i]))
+            result.append(organization.get('id'))
+        except ForemanError as e:
+            module.fail_json('Could not get Organizations: {0}'.format(e.message))
+    return result
+
+
+def get_location_ids(module, theforeman, locations):
+    result = []
+    for i in range(0, len(locations)):
+        try:
+            location = theforeman.search_location(data={'name':locations[i]})
+            if not location:
+                module.fail_json('Could not find Location {0}'.format(locations[i]))
+            result.append(location.get('id'))
+        except ForemanError as e:
+            module.fail_json('Could not get Locations: {0}'.format(e.message))
+    return result
 
 def ensure(module):
     global theforeman
@@ -113,6 +148,8 @@ def ensure(module):
     fullname = module.params['fullname']
     state = module.params['state']
     dns_proxy = module.params['dns_proxy']
+    organizations = module.params['organizations']
+    locations = module.params['locations']
 
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
@@ -132,6 +169,13 @@ def ensure(module):
         domain = theforeman.search_domain(data=data)
     except ForemanError as e:
         module.fail_json(msg='Could not get domain: {0}'.format(e.message))
+
+    if organizations:
+         data['organization_ids'] = get_organization_ids(module, theforeman, organizations)
+
+    if locations:
+         data['location_ids'] = get_location_ids(module, theforeman, locations)
+
 
     data['fullname'] = fullname
     if dns_proxy:
@@ -171,6 +215,8 @@ def main():
             fullname=dict(type='str', required=False),
             dns_proxy=dict(type='str', required=False),
             state=dict(type='str', default='present', choices=['present', 'absent']),
+            organizations=dict(type='list', required=False),
+            locations=dict(type='list', required=False),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),
             foreman_user=dict(type='str', required=True),

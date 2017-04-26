@@ -100,6 +100,14 @@ options:
     required: false
     default: None
     choices: ['build', 'image']
+  ptable:
+    description: Which Partition table should be used, if build is set true
+    required: false
+    default: None
+  smart_proxy:
+    description: The smart proxy, the host should be assigned to
+    required: false
+    default: None   
   root_pass:
     description: root password
     required: false
@@ -175,7 +183,9 @@ def ensure():
     organization_name = module.params[ORGANIZATION]
     parameters = module.params['parameters']
     provision_method = module.params['provision_method']
+    ptable_name = module.params[PARTITION_TABLE]
     root_pass = module.params['root_pass']
+    smart_proxy_name = module.params[SMART_PROXY]
     state = module.params['state']
     subnet_name = module.params[SUBNET]
     foreman_host = module.params['foreman_host']
@@ -329,9 +339,27 @@ def ensure():
         if provision_method:
             data['provision_method'] = provision_method
 
+        # Ptable 
+        if ptable_name:
+           ptable = get_resource(resource_type=PARTITION_TABLES,
+                                  resource_func=theforeman.search_partition_table,
+                                  resource_name=ptable_name)
+           #return True, ptable
+           data['ptable_id'] = ptable.get('id')
+
+
         # Root password
         if root_pass:
             data['root_pass'] = root_pass
+
+        # Smart Proxy
+        if smart_proxy_name:
+            smart_proxy = get_resource(resource_type=SMART_PROXY,
+                                   resource_func=theforeman.search_smart_proxy,
+                                   resource_name=smart_proxy_name)
+            data['puppet_proxy_id'] = str(smart_proxy.get('id'))
+
+
 
         # Subnet
         if subnet_name:
@@ -466,9 +494,11 @@ def main():
             operatingsystem=dict(type='str', default=None),
             organization=dict(type='str', default=None),
             parameters=dict(type='list', default=None),
+            ptable=dict(type='str', default=None),
             provision_method=dict(type='str', required=False,
                                   choices=['build', 'image']),
             root_pass=dict(type='str', default=None),
+            smart_proxy=dict(type='str', default=None),
             state=dict(type='str', default='present',
                        choices=['present', 'absent', 'running', 'stopped', 'rebooted']),
             subnet=dict(type='str', default=None),

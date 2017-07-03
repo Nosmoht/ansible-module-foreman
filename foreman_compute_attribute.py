@@ -91,9 +91,11 @@ def ensure(module):
     try:
         compute_profile = theforeman.search_compute_profile(data={'name': compute_profile_name})
         if not compute_profile:
-            module.fail_json(msg='Compute profile not found: {0}'.format(compute_resource_name))
+            module.fail_json(msg='Compute profile {0} not found on {1}'.format(compute_profile_name,
+                                                                               compute_resource_name))
     except ForemanError as e:
-        module.fail_json(msg='Could not get compute profile: {0}'.format(compute_resource_name))
+        module.fail_json(msg='Could not get compute profile {0} on {1}'.format(compute_profile_name,
+                                                                               compute_resource_name))
 
     compute_attributes = theforeman.get_compute_attribute(compute_resource_id=compute_resource.get('id'),
                                                           compute_profile_id=compute_profile.get('id'))

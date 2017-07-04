@@ -232,6 +232,7 @@ def ensure():
                 not equal_dict_lists(l1=data.get('operatingsystems', None),
                                      l2=config_template.get('operatingsystems', None))):
             try:
+                del data['template_kind_id']
                 config_template = theforeman.update_config_template(id=config_template.get('id'), data=data)
                 return True, config_template
             except ForemanError as e:

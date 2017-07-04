@@ -399,7 +399,7 @@ def main():
             parameters=dict(type='list', default=None),
             partition_table=dict(type='str', default=None),
             realm=dict(type='str', default=None),
-            root_pass=dict(type='str', default=None),
+            root_pass=dict(type='str', default=None, no_log=True),
             smart_proxy=dict(type='str', default=None),
             subnet=dict(type='str', default=None),
             state=dict(type='str', default='present', choices=['present', 'absent']),

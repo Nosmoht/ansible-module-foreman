@@ -151,6 +151,8 @@ def ensure():
 
     data = dict(name=name)
     data['major'] = module.params['major']
+    if module.params['minor'] != None:
+        data['minor'] = module.params['minor']
 
     try:
         os = theforeman.search_operatingsystem(data=data)

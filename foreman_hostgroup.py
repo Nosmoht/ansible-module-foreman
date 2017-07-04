@@ -297,12 +297,12 @@ def ensure(module):
 
     # Parent
     if parent_name:
-        environment = get_resource(module=module,
-                                   resource_type=HOSTGROUP,
-                                   resource_func=theforeman.search_hostgroup,
-                                   search_title=True,
-                                   resource_name=parent_name)
-        data['parent_id'] = str(environment.get('id'))
+        parent = get_resource(module=module,
+                              resource_type=HOSTGROUP,
+                              resource_func=theforeman.search_hostgroup,
+                              search_title=True,
+                              resource_name=parent_name)
+        data['parent_id'] = str(parent.get('id'))
 
     if not hostgroup and state == 'present':
         try:

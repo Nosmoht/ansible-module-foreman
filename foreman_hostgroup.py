@@ -297,12 +297,12 @@ def ensure(module):
 
     # Parent
     if parent_name:
-        environment = get_resource(module=module,
-                                   resource_type=HOSTGROUP,
-                                   resource_func=theforeman.search_hostgroup,
-                                   search_title=True,
-                                   resource_name=parent_name)
-        data['parent_id'] = str(environment.get('id'))
+        parent = get_resource(module=module,
+                              resource_type=HOSTGROUP,
+                              resource_func=theforeman.search_hostgroup,
+                              search_title=True,
+                              resource_name=parent_name)
+        data['parent_id'] = str(parent.get('id'))
 
     if not hostgroup and state == 'present':
         try:
@@ -399,7 +399,7 @@ def main():
             parameters=dict(type='list', default=None),
             partition_table=dict(type='str', default=None),
             realm=dict(type='str', default=None),
-            root_pass=dict(type='str', default=None),
+            root_pass=dict(type='str', default=None, no_log=True),
             smart_proxy=dict(type='str', default=None),
             subnet=dict(type='str', default=None),
             state=dict(type='str', default='present', choices=['present', 'absent']),

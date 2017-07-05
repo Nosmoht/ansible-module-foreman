@@ -118,7 +118,7 @@ def dict_list_to_list(alist, key):
     return result
 
 
-def equal_dict_lists(l1, l2, compare_key='name'):
+def equal_dict_lists(l1, l2, compare_key='title'):
     s1 = set(dict_list_to_list(alist=l1, key=compare_key))
     s2 = set(dict_list_to_list(alist=l2, key=compare_key))
     return s1.issubset(s2) and s2.issubset(s1)

@@ -26,7 +26,7 @@ options:
   name:
     description: Setting name
     required: true
-  vaule:
+  value:
     description: setting value
     required: false
   foreman_host:
@@ -55,7 +55,7 @@ author: "Guido Günther <agx@sigxcpu.org>"
 
 EXAMPLES = '''
 - name: Ensure Setting
-  foreman_realm:
+  foreman_setting:
     name: outofsync_interval
     value: 10
     foreman_host: foreman.example.com

@@ -98,15 +98,17 @@ def ensure(module):
     if not setting:
         module.fail_json(msg='Setting %s does not exist' % name)
 
-    data['value'] = value
-    if setting:
-        t = type(setting['value'])
-        if t(data['value']) != t(setting['value']):
-            try:
-                setting = theforeman.update_setting(id=setting.get('id'), data=data)
-                return True, setting
-            except ForemanError as e:
-                module.fail_json(msg='Could not update setting: {0}'.format(e.message))
+    if isinstance(setting['value'], (bool, str, int)):
+        data['value'] = type(setting['value'])(value)
+    else:
+        data['value'] = value
+
+    if data['value'] != setting['value']:
+        try:
+            setting = theforeman.update_setting(id=setting.get('id'), data=data)
+            return True, setting
+        except ForemanError as e:
+            module.fail_json(msg='Could not update setting: {0}'.format(e.message))
     return False, setting
 
 

@@ -31,6 +31,10 @@ options:
     description: Architecture name
     required: false
     default: x86_64
+  ip:
+    description: IP to use
+    required: false
+    default: false
   build:
     description: Boolean to define if host should be builded
     required: false
@@ -116,6 +120,14 @@ options:
     description: Name of subnet to use for this host
     required: false
     default: None
+  compute_attributes:
+    description: compute attributes (can contain nested volume_attributes)
+    required: false
+    default: None
+  interfaces_attributes:
+    description: interface attributes (can contain nested compute_attributes)
+    required: false
+    default: None
   foreman_host:
     description: Hostname or IP address of Foreman system
     required: false
@@ -184,6 +196,7 @@ def ensure():
     name = module.params['name']
     architecture_name = module.params[ARCHITECTURE]
     build = module.params['build']
+    ip = module.params['ip']
     compute_profile_name = module.params[COMPUTE_PROFILE]
     compute_resource_name = module.params[COMPUTE_RESOURCE]
     domain_name = module.params[DOMAIN]
@@ -205,6 +218,8 @@ def ensure():
     smart_proxy_name = module.params[SMART_PROXY]
     state = module.params['state']
     subnet_name = module.params[SUBNET]
+    compute_attributes = module.params['compute_attributes'] 
+    interfaces_attributes = module.params['interfaces_attributes'] 
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
@@ -242,6 +257,10 @@ def ensure():
 
     # Build
     data['build'] = build
+
+    # IP
+    if ip:
+        data['ip'] = ip
 
     # Compute Profile
     if compute_profile_name:
@@ -365,13 +384,20 @@ def ensure():
         data['puppet_proxy_id'] = str(smart_proxy.get('id'))
 
 
-
     # Subnet
     if subnet_name:
         subnet = get_resource(resource_type=SUBNET,
                               resource_func=theforeman.search_subnet,
                               resource_name=subnet_name)
         data['subnet_id'] = subnet.get('id')
+
+    # compute attributes
+    if compute_attributes:
+        data['compute_attributes'] = compute_attributes
+
+    # interface attributes
+    if interfaces_attributes:
+        data['interfaces_attributes'] = interfaces_attributes
 
     if not host and state == 'present':
         try:
@@ -523,6 +549,8 @@ def main():
             state=dict(type='str', default='present',
                        choices=['present', 'absent', 'running', 'stopped', 'rebooted']),
             subnet=dict(type='str', default=None),
+            interfaces_attributes=dict(type='dict', required=False),
+            compute_attributes=dict(type='dict', required=False),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),
             foreman_user=dict(type='str', required=True),

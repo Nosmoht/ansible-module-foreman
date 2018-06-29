@@ -36,6 +36,12 @@ With the current implementation it's possible to create, update and delete the f
 [python-foreman] >= 0.12.11 is required to be installed on the system where Ansible is started from.
 
 # Examples
+`ansible.cfg` has to contain path to modules and module_utils:  
+```
+[default]
+library = ansible-module-foreman
+module_utils = ansible-module-foreman/module_utils
+```
 The following parameters are always required so the module knows how to connect to the Foreman [API v2].
 They are replaced in the examples by three dots (...).
 

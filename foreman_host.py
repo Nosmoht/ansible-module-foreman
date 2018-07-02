@@ -112,6 +112,10 @@ options:
     description: The smart proxy, the host should be assigned to
     required: false
     default: None   
+  realm:
+    description: realm
+    required: false
+    default: None
   root_pass:
     description: root password
     required: false
@@ -218,6 +222,7 @@ def ensure():
     smart_proxy_name = module.params[SMART_PROXY]
     state = module.params['state']
     subnet_name = module.params[SUBNET]
+    realm_name = module.params['realm']
     compute_attributes = module.params['compute_attributes'] 
     interfaces_attributes = module.params['interfaces_attributes'] 
     foreman_host = module.params['foreman_host']
@@ -391,6 +396,13 @@ def ensure():
                               resource_name=subnet_name)
         data['subnet_id'] = subnet.get('id')
 
+    # Realm
+    if realm_name:
+        realm = get_resource(resource_type=REALM,
+                              resource_func=theforeman.search_realm,
+                              resource_name=realm_name)
+        data['realm_id'] = realm.get('id')
+
     # compute attributes
     if compute_attributes:
         data['compute_attributes'] = compute_attributes
@@ -549,6 +561,7 @@ def main():
             state=dict(type='str', default='present',
                        choices=['present', 'absent', 'running', 'stopped', 'rebooted']),
             subnet=dict(type='str', default=None),
+            realm=dict(type='str', default=None),
             interfaces_attributes=dict(type='dict', required=False),
             compute_attributes=dict(type='dict', required=False),
             foreman_host=dict(type='str', default='127.0.0.1'),

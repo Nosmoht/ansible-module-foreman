@@ -549,7 +549,7 @@ def main():
             state=dict(type='str', default='present',
                        choices=['present', 'absent', 'running', 'stopped', 'rebooted']),
             subnet=dict(type='str', default=None),
-            interfaces_attributes=dict(type='dict', required=False),
+            interfaces_attributes=dict(type='list', required=False),
             compute_attributes=dict(type='dict', required=False),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),

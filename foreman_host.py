@@ -108,10 +108,14 @@ options:
     description: Which Partition table should be used, if build is set true
     required: false
     default: None
-  smart_proxy:
-    description: The smart proxy, the host should be assigned to
+  puppet_proxy:
+    description: The puppet smart proxy, the host should be assigned to
     required: false
-    default: None   
+    default: None
+  puppet_ca_proxy:
+    description: The puppet ca smart proxy, the host should be assigned to
+    required: false
+    default: None
   root_pass:
     description: root password
     required: false
@@ -215,11 +219,12 @@ def ensure():
     provision_method = module.params['provision_method']
     ptable_name = module.params[PARTITION_TABLE]
     root_pass = module.params['root_pass']
-    smart_proxy_name = module.params[SMART_PROXY]
+    puppet_proxy_name = module.params['puppet_proxy']
+    puppet_ca_proxy_name = module.params['puppet_ca_proxy']
     state = module.params['state']
     subnet_name = module.params[SUBNET]
-    compute_attributes = module.params['compute_attributes'] 
-    interfaces_attributes = module.params['interfaces_attributes'] 
+    compute_attributes = module.params['compute_attributes']
+    interfaces_attributes = module.params['interfaces_attributes']
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
@@ -376,12 +381,20 @@ def ensure():
     if root_pass:
         data['root_pass'] = root_pass
 
-    # Smart Proxy
-    if smart_proxy_name:
-        smart_proxy = get_resource(resource_type=SMART_PROXY,
+    # Puppet Smart Proxy
+    if puppet_proxy_name:
+        puppet_proxy = get_resource(resource_type=SMART_PROXY,
                                resource_func=theforeman.search_smart_proxy,
-                               resource_name=smart_proxy_name)
-        data['puppet_proxy_id'] = str(smart_proxy.get('id'))
+                               resource_name=puppet_proxy_name)
+        data['puppet_proxy_id'] = str(puppet_proxy.get('id'))
+
+    # Puppet CA Smart Proxy
+    if puppet_ca_proxy_name:
+        puppet_ca_proxy = get_resource(resource_type=SMART_PROXY,
+                               resource_func=theforeman.search_smart_proxy,
+                               resource_name=puppet_ca_proxy_name)
+        data['puppet_ca_proxy_id'] = str(puppet_ca_proxy.get('id'))
+
 
 
     # Subnet
@@ -545,7 +558,8 @@ def main():
             provision_method=dict(type='str', required=False,
                                   choices=['build', 'image']),
             root_pass=dict(type='str', default=None),
-            smart_proxy=dict(type='str', default=None),
+            puppet_proxy=dict(type='str', default=None),
+            puppet_ca_proxy=dict(type='str', default=None),
             state=dict(type='str', default='present',
                        choices=['present', 'absent', 'running', 'stopped', 'rebooted']),
             subnet=dict(type='str', default=None),

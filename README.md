@@ -36,6 +36,12 @@ With the current implementation it's possible to create, update and delete the f
 [python-foreman] >= 0.12.11 is required to be installed on the system where Ansible is started from.
 
 # Examples
+`ansible.cfg` has to contain path to modules and module_utils:  
+```
+[default]
+library = ansible-module-foreman
+module_utils = ansible-module-foreman/module_utils
+```
 The following parameters are always required so the module knows how to connect to the Foreman [API v2].
 They are replaced in the examples by three dots (...).
 
@@ -230,6 +236,23 @@ or
     name: ansible-host-01.example.com
     state: absent
 ...
+```
+### Host with network interfaces
+```yaml
+- name: Ensure Host
+  foreman_host:
+    name: ansible-host-04
+    state: present
+    .
+    .
+    interfaces:
+      - ip: 10.11.12.123
+        mac: 00:21:f6:16:e4:2e
+        subnet: "Dev Network"
+      - ip: 10.11.12.124
+        mac: 00:21:f6:42:52:91
+        subnet: "Dev Network"
+    ...
 ```
 ## Hostgroup
 ```yaml

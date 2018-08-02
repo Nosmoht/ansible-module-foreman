@@ -120,6 +120,14 @@ options:
     description: Name of subnet to use for this host
     required: false
     default: None
+  owner_user_name:
+    description: Name of the owner user to use for this host
+    required: false
+    default: None
+  owner_usergroup_name:
+    description: Name of the owner usergroup to use for this host
+    required: false
+    default: None
   compute_attributes:
     description: compute attributes (can contain nested volume_attributes)
     required: false
@@ -218,6 +226,8 @@ def ensure():
     smart_proxy_name = module.params[SMART_PROXY]
     state = module.params['state']
     subnet_name = module.params[SUBNET]
+    owner_user_name = module.params['owner_user_name']
+    owner_usergroup_name = module.params['owner_usergroup_name']
     compute_attributes = module.params['compute_attributes'] 
     interfaces_attributes = module.params['interfaces_attributes'] 
     foreman_host = module.params['foreman_host']
@@ -391,6 +401,21 @@ def ensure():
                               resource_name=subnet_name)
         data['subnet_id'] = subnet.get('id')
 
+    # Owner
+    if owner_user_name:
+        user = get_resource(resource_type=USER,
+                              resource_func=theforeman.search_user,
+                              resource_name=owner_user_name)
+        data['owner_id'] = user.get('id')
+        data['owner_type'] = 'User'
+
+    if owner_usergroup_name:
+        usergroup = get_resource(resource_type=USERGROUP,
+                              resource_func=theforeman.search_usergroup,
+                              resource_name=owner_usergroup_name)
+        data['owner_id'] = usergroup.get('id')
+        data['owner_type'] = 'Usergroup'
+
     # compute attributes
     if compute_attributes:
         data['compute_attributes'] = compute_attributes
@@ -549,6 +574,8 @@ def main():
             state=dict(type='str', default='present',
                        choices=['present', 'absent', 'running', 'stopped', 'rebooted']),
             subnet=dict(type='str', default=None),
+            owner_user_name=dict(type='str', default=None),
+            owner_usergroup_name=dict(type='str', default=None),
             interfaces_attributes=dict(type='dict', required=False),
             compute_attributes=dict(type='dict', required=False),
             foreman_host=dict(type='str', default='127.0.0.1'),

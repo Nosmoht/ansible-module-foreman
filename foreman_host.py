@@ -108,9 +108,12 @@ options:
     description: Which Partition table should be used, if build is set true
     required: false
     default: None
-  smart_proxy:
-    description: The smart proxy, the host should be assigned to
+  puppet_proxy:
+    description: The puppet smart proxy, the host should be assigned to
     required: false
+    default: None
+  puppet_ca_proxy:
+    description: The puppet ca smart proxy, the host should be assigned to
     default: None   
   realm:
     description: realm
@@ -122,6 +125,16 @@ options:
     default: None
   subnet:
     description: Name of subnet to use for this host
+    required: false
+    default: None
+  interfaces:
+    description: List of network interfaces
+  owner_user_name:
+    description: Name of the owner user to use for this host
+    required: false
+    default: None
+  owner_usergroup_name:
+    description: Name of the owner usergroup to use for this host
     required: false
     default: None
   compute_attributes:
@@ -225,18 +238,24 @@ def ensure():
     operatingsystem_name = module.params[OPERATINGSYSTEM]
     organization_name = module.params[ORGANIZATION]
     parameters = module.params['parameters']
+    interfaces = module.params['interfaces']
     provision_method = module.params['provision_method']
     ptable_name = module.params[PARTITION_TABLE]
     root_pass = module.params['root_pass']
-    smart_proxy_name = module.params[SMART_PROXY]
+    puppet_proxy_name = module.params['puppet_proxy']
+    puppet_ca_proxy_name = module.params['puppet_ca_proxy']
     state = module.params['state']
     subnet_name = module.params[SUBNET]
     realm_name = module.params['realm']
+    interfaces_attributes = module.params['interfaces_attributes']
+    owner_user_name = module.params['owner_user_name']
+    owner_usergroup_name = module.params['owner_usergroup_name']
     compute_attributes = module.params['compute_attributes'] 
     content_source_name = module.params['content_source']
     content_view_name = module.params['content_view']
     lifecycle_environment_name = module.params['lifecycle_environment']
     interfaces_attributes = module.params['interfaces_attributes'] 
+
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
@@ -393,12 +412,20 @@ def ensure():
     if root_pass:
         data['root_pass'] = root_pass
 
-    # Smart Proxy
-    if smart_proxy_name:
-        smart_proxy = get_resource(resource_type=SMART_PROXY,
+    # Puppet Smart Proxy
+    if puppet_proxy_name:
+        puppet_proxy = get_resource(resource_type=SMART_PROXY,
                                resource_func=theforeman.search_smart_proxy,
-                               resource_name=smart_proxy_name)
-        data['puppet_proxy_id'] = str(smart_proxy.get('id'))
+                               resource_name=puppet_proxy_name)
+        data['puppet_proxy_id'] = str(puppet_proxy.get('id'))
+
+    # Puppet CA Smart Proxy
+    if puppet_ca_proxy_name:
+        puppet_ca_proxy = get_resource(resource_type=SMART_PROXY,
+                               resource_func=theforeman.search_smart_proxy,
+                               resource_name=puppet_ca_proxy_name)
+        data['puppet_ca_proxy_id'] = str(puppet_ca_proxy.get('id'))
+
 
 
     # Subnet
@@ -441,6 +468,21 @@ def ensure():
         search = {'name': lifecycle_environment_name}
         lifecycle_environment = theforeman.search_resource(resource_type=resource_type, data=search)
         data['content_facet_attributes']['lifecycle_environment_id'] = lifecycle_environment.get('id')
+
+    # Owner
+    if owner_user_name:
+        user = get_resource(resource_type=USER,
+                              resource_func=theforeman.search_user,
+                              resource_name=owner_user_name)
+        data['owner_id'] = user.get('id')
+        data['owner_type'] = 'User'
+
+    if owner_usergroup_name:
+        usergroup = get_resource(resource_type=USERGROUP,
+                              resource_func=theforeman.search_usergroup,
+                              resource_name=owner_usergroup_name)
+        data['owner_id'] = usergroup.get('id')
+        data['owner_type'] = 'Usergroup'
 
     # compute attributes
     if compute_attributes:
@@ -531,6 +573,78 @@ def ensure():
                                     param_name=param.get('name'), error=e.message))
                         changed = True
 
+    # Network Interfaces
+    if interfaces:
+        try:
+            host_interfaces = theforeman.get_resource('hosts', host_id, component='interfaces').get('results') or []
+        except ForemanError as e:
+            module.fail_json(
+                msg='Could not get host interfaces: {0}'.format(e.message))
+
+        interface_ips = []  # use ip to determine if existing or new interface
+                            # i.e. if need to delete, create or update
+        has_primary = False
+        for iface in interfaces:
+            interface_ips.append(iface.get('ip'))
+            # clean primary flag, foreman api expecting 'true', 'false' strings
+            if 'primary' in iface:
+                if iface['primary']:
+                    iface['primary'] = 'true'
+                    has_primary = True
+                else:
+                    iface['primary'] = 'false'
+
+        host_interfaces_by_ip = {}
+        for host_iface in host_interfaces:
+            host_interfaces_by_ip[host_iface.get('ip')] = host_iface
+
+        # Create/update interfaces
+        for iface in interfaces:
+            interface_ip = iface.get('ip')
+
+            # get subnet id if subnet name specified
+            iface_subnet_name = iface.pop('subnet', None)
+            if iface_subnet_name:
+                iface_subnet = get_resource(resource_type=SUBNET,
+                                            resource_func=theforeman.search_subnet,
+                                            resource_name=iface_subnet_name)
+                iface['subnet_id'] = iface_subnet.get('id')
+
+            if not has_primary:
+                # No interface marked as primary.
+                # If ip set with vm - mark it as primary.
+                if interface_ip == ip:
+                    iface['primary'] = True
+
+            if interface_ip not in host_interfaces_by_ip.keys():
+                # Create interface
+                try:
+                    theforeman.create_resource('hosts', 'interface', iface,
+                                               resource_id=host_id, component='interfaces')
+                except ForemanError as e:
+                    module.fail_json(msg='Could not create host interface {ip}: {error}'.format(
+                                     ip=interface_ip, error=e.message))
+                changed = True
+
+            else:
+                # Update interface
+                iface_to_upd = host_interfaces_by_ip[interface_ip]
+
+                # compare fields to determine if need to update
+                if 'subnet_id' in iface and iface['subnet_id'] != iface_to_upd.get('subnet_id') \
+                    or 'mac'       in iface and iface['mac']       != iface_to_upd.get('mac') \
+                    or 'managed'   in iface and iface['managed']   != iface_to_upd.get('managed') \
+                    or 'provision' in iface and iface['provision'] != iface_to_upd.get('provision') \
+                    or 'virtual'   in iface and iface['virtual']   != iface_to_upd.get('virtual'):
+
+                    try:
+                        theforeman.update_resource('hosts', host_id, iface, component='interfaces',
+                                                   component_id=host_interfaces_by_ip[interface_ip]['id'])
+                    except ForemanError as e:
+                        module.fail_json(msg='Could not create host interface {ip}: {error}'.format(
+                                         ip=interface_ip, error=e.message))
+                    changed = True
+
     try:
         host_power = theforeman.get_host_power(host_id=host_id)
     except ForemanError as e:
@@ -592,16 +706,20 @@ def main():
             operatingsystem=dict(type='str', default=None),
             organization=dict(type='str', default=None),
             parameters=dict(type='list', default=None),
+            interfaces=dict(type='list', default=None),
             ptable=dict(type='str', default=None),
             provision_method=dict(type='str', required=False,
                                   choices=['build', 'image']),
             root_pass=dict(type='str', default=None),
-            smart_proxy=dict(type='str', default=None),
+            puppet_proxy=dict(type='str', default=None),
+            puppet_ca_proxy=dict(type='str', default=None),
             state=dict(type='str', default='present',
                        choices=['present', 'absent', 'running', 'stopped', 'rebooted']),
             subnet=dict(type='str', default=None),
             realm=dict(type='str', default=None),
-            interfaces_attributes=dict(type='dict', required=False),
+            interfaces_attributes=dict(type='list', required=False),
+            owner_user_name=dict(type='str', default=None),
+            owner_usergroup_name=dict(type='str', default=None),
             compute_attributes=dict(type='dict', required=False),
             content_source=dict(type='str', required=False),
             content_view=dict(type='str', required=False),

@@ -31,6 +31,10 @@ options:
     description: Architecture name
     required: false
     default: x86_64
+  ip:
+    description: IP to use
+    required: false
+    default: false
   build:
     description: Boolean to define if host should be builded
     required: false
@@ -118,6 +122,20 @@ options:
     default: None
   interfaces:
     description: List of network interfaces
+  owner_user_name:
+    description: Name of the owner user to use for this host
+    required: false
+    default: None
+  owner_usergroup_name:
+    description: Name of the owner usergroup to use for this host
+    required: false
+    default: None
+  compute_attributes:
+    description: compute attributes (can contain nested volume_attributes)
+    required: false
+    default: None
+  interfaces_attributes:
+    description: interface attributes (can contain nested compute_attributes)
     required: false
     default: None
   foreman_host:
@@ -166,11 +184,29 @@ def get_resource(resource_type, resource_func, resource_name, search_title=False
     return result
 
 
+def filter_host(h):
+    """Filter all _name parameters since we only care about the IDs and convert
+    ids to strings since this is what we need to feed back to foreman
+
+    >>> filter_host({"a_name": "foo", "a_id": 1})
+    {'a_id': '1'}
+    """
+    filtered = {}
+    keep = ['title', 'name', 'root_pass']
+    for k, v in h.items():
+        if k.endswith('_id') and v is not None:
+            filtered[k] = str(v)
+        elif k in keep:
+            filtered[k] = v
+    return filtered
+
+
 def ensure():
     changed = False
     name = module.params['name']
     architecture_name = module.params[ARCHITECTURE]
     build = module.params['build']
+    ip = module.params['ip']
     compute_profile_name = module.params[COMPUTE_PROFILE]
     compute_resource_name = module.params[COMPUTE_RESOURCE]
     domain_name = module.params[DOMAIN]
@@ -193,6 +229,10 @@ def ensure():
     smart_proxy_name = module.params[SMART_PROXY]
     state = module.params['state']
     subnet_name = module.params[SUBNET]
+    owner_user_name = module.params['owner_user_name']
+    owner_usergroup_name = module.params['owner_usergroup_name']
+    compute_attributes = module.params['compute_attributes'] 
+    interfaces_attributes = module.params['interfaces_attributes'] 
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
     foreman_user = module.params['foreman_user']
@@ -221,165 +261,195 @@ def ensure():
         module.fail_json(
             msg='Error while searching host: {0}'.format(e.message))
 
-    if state == 'absent':
-        if host:
+    # Architecture
+    if architecture_name:
+        architecture = get_resource(resource_type=ARCHITECTURE,
+                                    resource_func=theforeman.search_architecture,
+                                    resource_name=architecture_name)
+        data['architecture_id'] = architecture.get('id')
+
+    # Build
+    data['build'] = build
+
+    # IP
+    if ip:
+        data['ip'] = ip
+
+    # Compute Profile
+    if compute_profile_name:
+        compute_profile = get_resource(resource_type=COMPUTE_PROFILE,
+                                       resource_func=theforeman.search_compute_profile,
+                                       resource_name=compute_profile_name)
+        data['compute_profile_id'] = compute_profile.get('id')
+
+    # Compute Resource
+    if compute_resource_name:
+        compute_resource = get_resource(resource_type=COMPUTE_RESOURCE,
+                                        resource_func=theforeman.search_compute_resource,
+                                        resource_name=compute_resource_name)
+        data['compute_resource_id'] = compute_resource.get('id')
+
+        # Image
+        if image_name:
+            compute_resource_images = compute_resource.get('images')
+            if not compute_resource_images:
+                module.fail_json(
+                    msg='Compute Resource {0} has no images'.format(compute_resource_name))
+            images = filter(lambda x: x['name'] ==
+                                      image_name, compute_resource_images)
+            if len(images) == 0:
+                module.fail_json(
+                    msg='Could not find image {image_name} in compute resource {compute_resource}'.format(
+                        image_name=image_name, compute_resource=compute_resource_name))
+            if len(images) > 1:
+                module.fail_json(
+                    msg='Found {count} images named {image_name} in compute resource {compute_resource}'.format(
+                        count=len(images), image_name=image_name, compute_resource=compute_resource_images))
+            image = images[0]
+            data['image_id'] = image.get('id')
+
+    # Domain
+    if domain_name:
+        domain = get_resource(resource_type=DOMAIN,
+                              resource_func=theforeman.search_domain,
+                              resource_name=domain_name)
+        data['domain_id'] = domain.get('id')
+
+    # Enabled
+    data['enabled'] = enabled
+
+    # Environment
+    if environment_name:
+        environment = get_resource(resource_type=ENVIRONMENT,
+                                   resource_func=theforeman.search_environment,
+                                   resource_name=environment_name)
+        data['environment_id'] = environment.get('id')
+
+    # Hostgroup
+    if hostgroup_name:
+        hostgroup = get_resource(resource_type=HOSTGROUP,
+                                 resource_func=theforeman.search_hostgroup,
+                                 resource_name=hostgroup_name,
+                                 search_title=True)
+        data['hostgroup_id'] = hostgroup.get('id')
+
+    # IP
+    if ip:
+        data['ip'] = ip
+
+    # Location
+    if location_name:
+        location = get_resource(resource_type=LOCATION,
+                                resource_func=theforeman.search_location,
+                                resource_name=location_name)
+        data['location_id'] = location.get('id')
+
+    # MAC
+    if mac:
+        data['mac'] = mac
+
+    # Managed
+    data['managed'] = managed
+
+    # Medium
+    if medium_name:
+        medium = get_resource(resource_type=MEDIUM,
+                              resource_func=theforeman.search_medium,
+                              resource_name=medium_name)
+        data['medium_id'] = medium.get('id')
+
+    # Organization
+    if organization_name:
+        organization = get_resource(resource_type=ORGANIZATION,
+                                    resource_func=theforeman.search_organization,
+                                    resource_name=organization_name)
+        data['organization_id'] = organization.get('id')
+
+    # Operatingssystem
+    if operatingsystem_name:
+        operatingsystem = get_resource(resource_type=OPERATINGSYSTEM,
+                                       resource_func=theforeman.search_operatingsystem,
+                                       resource_name=operatingsystem_name)
+        data['operatingsystem_id'] = operatingsystem.get('id')
+
+    # Provision Method
+    if provision_method:
+        data['provision_method'] = provision_method
+
+    # Ptable 
+    if ptable_name:
+       ptable = get_resource(resource_type=PARTITION_TABLES,
+                              resource_func=theforeman.search_partition_table,
+                              resource_name=ptable_name)
+       #return True, ptable
+       data['ptable_id'] = ptable.get('id')
+
+
+    # Root password
+    if root_pass:
+        data['root_pass'] = root_pass
+
+    # Smart Proxy
+    if smart_proxy_name:
+        smart_proxy = get_resource(resource_type=SMART_PROXY,
+                               resource_func=theforeman.search_smart_proxy,
+                               resource_name=smart_proxy_name)
+        data['puppet_proxy_id'] = str(smart_proxy.get('id'))
+
+
+    # Subnet
+    if subnet_name:
+        subnet = get_resource(resource_type=SUBNET,
+                              resource_func=theforeman.search_subnet,
+                              resource_name=subnet_name)
+        data['subnet_id'] = subnet.get('id')
+
+    # Owner
+    if owner_user_name:
+        user = get_resource(resource_type=USER,
+                              resource_func=theforeman.search_user,
+                              resource_name=owner_user_name)
+        data['owner_id'] = user.get('id')
+        data['owner_type'] = 'User'
+
+    if owner_usergroup_name:
+        usergroup = get_resource(resource_type=USERGROUP,
+                              resource_func=theforeman.search_usergroup,
+                              resource_name=owner_usergroup_name)
+        data['owner_id'] = usergroup.get('id')
+        data['owner_type'] = 'Usergroup'
+
+    # compute attributes
+    if compute_attributes:
+        data['compute_attributes'] = compute_attributes
+
+    # interface attributes
+    if interfaces_attributes:
+        data['interfaces_attributes'] = interfaces_attributes
+
+    if not host and state == 'present':
+        try:
+            host = theforeman.create_host(data=data)
+            changed = True
+        except ForemanError as e:
+            module.fail_json(
+                msg='Could not create host: {0}'.format(e.message))
+    elif host:
+        if state == 'absent':
             try:
                 host = theforeman.delete_host(id=host.get('id'))
                 return True, host
             except ForemanError as e:
                 module.fail_json(
                     msg='Could not delete host: {0}'.format(e.message))
-        return False, host
 
-    if not host:
-
-        # Architecture
-        if architecture_name:
-            architecture = get_resource(resource_type=ARCHITECTURE,
-                                        resource_func=theforeman.search_architecture,
-                                        resource_name=architecture_name)
-            data['architecture_id'] = architecture.get('id')
-
-        # Build
-        data['build'] = build
-
-        # Compute Profile
-        if compute_profile_name:
-            compute_profile = get_resource(resource_type=COMPUTE_PROFILE,
-                                           resource_func=theforeman.search_compute_profile,
-                                           resource_name=compute_profile_name)
-            data['compute_profile_id'] = compute_profile.get('id')
-
-        # Compute Resource
-        if compute_resource_name:
-            compute_resource = get_resource(resource_type=COMPUTE_RESOURCE,
-                                            resource_func=theforeman.search_compute_resource,
-                                            resource_name=compute_resource_name)
-            data['compute_resource_id'] = compute_resource.get('id')
-
-            # Image
-            if image_name:
-                compute_resource_images = compute_resource.get('images')
-                if not compute_resource_images:
-                    module.fail_json(
-                        msg='Compute Resource {0} has no images'.format(compute_resource_name))
-                images = filter(lambda x: x['name'] ==
-                                          image_name, compute_resource_images)
-                if len(images) == 0:
-                    module.fail_json(
-                        msg='Could not find image {image_name} in compute resource {compute_resource}'.format(
-                            image_name=image_name, compute_resource=compute_resource_name))
-                if len(images) > 1:
-                    module.fail_json(
-                        msg='Found {count} images named {image_name} in compute resource {compute_resource}'.format(
-                            count=len(images), image_name=image_name, compute_resource=compute_resource_images))
-                image = images[0]
-                data['image_id'] = image.get('id')
-
-        # Domain
-        if domain_name:
-            domain = get_resource(resource_type=DOMAIN,
-                                  resource_func=theforeman.search_domain,
-                                  resource_name=domain_name)
-            data['domain_id'] = domain.get('id')
-
-        # Enabled
-        data['enabled'] = enabled
-
-        # Environment
-        if environment_name:
-            environment = get_resource(resource_type=ENVIRONMENT,
-                                       resource_func=theforeman.search_environment,
-                                       resource_name=environment_name)
-            data['environment_id'] = environment.get('id')
-
-        # Hostgroup
-        if hostgroup_name:
-            hostgroup = get_resource(resource_type=HOSTGROUP,
-                                     resource_func=theforeman.search_hostgroup,
-                                     resource_name=hostgroup_name,
-                                     search_title=True)
-            data['hostgroup_id'] = hostgroup.get('id')
-
-        # IP
-        if ip:
-            data['ip'] = ip
-
-        # Location
-        if location_name:
-            location = get_resource(resource_type=LOCATION,
-                                    resource_func=theforeman.search_location,
-                                    resource_name=location_name)
-            data['location_id'] = location.get('id')
-
-        # MAC
-        if mac:
-            data['mac'] = mac
-
-        # Managed
-        data['managed'] = managed
-
-        # Medium
-        if medium_name:
-            medium = get_resource(resource_type=MEDIUM,
-                                  resource_func=theforeman.search_medium,
-                                  resource_name=medium_name)
-            data['medium_id'] = medium.get('id')
-
-        # Organization
-        if organization_name:
-            organization = get_resource(resource_type=ORGANIZATION,
-                                        resource_func=theforeman.search_organization,
-                                        resource_name=organization_name)
-            data['organization_id'] = organization.get('id')
-
-        # Operatingssystem
-        if operatingsystem_name:
-            operatingsystem = get_resource(resource_type=OPERATINGSYSTEM,
-                                           resource_func=theforeman.search_operatingsystem,
-                                           resource_name=operatingsystem_name)
-            data['operatingsystem_id'] = operatingsystem.get('id')
-
-        # Provision Method
-        if provision_method:
-            data['provision_method'] = provision_method
-
-        # Ptable 
-        if ptable_name:
-           ptable = get_resource(resource_type=PARTITION_TABLES,
-                                  resource_func=theforeman.search_partition_table,
-                                  resource_name=ptable_name)
-           #return True, ptable
-           data['ptable_id'] = ptable.get('id')
-
-
-        # Root password
-        if root_pass:
-            data['root_pass'] = root_pass
-
-        # Smart Proxy
-        if smart_proxy_name:
-            smart_proxy = get_resource(resource_type=SMART_PROXY,
-                                   resource_func=theforeman.search_smart_proxy,
-                                   resource_name=smart_proxy_name)
-            data['puppet_proxy_id'] = str(smart_proxy.get('id'))
-
-
-
-        # Subnet
-        if subnet_name:
-            subnet = get_resource(resource_type=SUBNET,
-                                  resource_func=theforeman.search_subnet,
-                                  resource_name=subnet_name)
-            data['subnet_id'] = subnet.get('id')
-
-        try:
-            host = theforeman.create_host(data=data)
-        except ForemanError as e:
-            module.fail_json(
-                msg='Could not create host: {0}'.format(e.message))
-
-        changed = True
+        cmp_host = filter_host(host)
+        if not all(data.get(key, None) == cmp_host.get(key, None) for key in data.keys() + cmp_host.keys()):
+            try:
+                host = theforeman.update_host(id=host.get('id'), data={'host': data})
+                changed = True
+            except ForemanError as e:
+                module.fail_json(msg='Could not update host: {0}'.format(e.message))
 
     host_id = host.get('id')
 
@@ -580,6 +650,10 @@ def main():
             state=dict(type='str', default='present',
                        choices=['present', 'absent', 'running', 'stopped', 'rebooted']),
             subnet=dict(type='str', default=None),
+            owner_user_name=dict(type='str', default=None),
+            owner_usergroup_name=dict(type='str', default=None),
+            interfaces_attributes=dict(type='dict', required=False),
+            compute_attributes=dict(type='dict', required=False),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),
             foreman_user=dict(type='str', required=True),

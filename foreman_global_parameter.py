@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# Ansible module to manage Foreman settings.
+# Ansible module to manage Foreman global parameters.
 #
 # This module is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,17 +18,17 @@
 
 DOCUMENTATION = '''
 ---
-module: foreman_setting
-short_description: Manage Foreman setting using Foreman API v2
+module: foreman_global_parameter
+short_description: Manage Foreman global parameter using Foreman API v2
 description:
-- Update Foreman settings using Foreman API v2
+- Update Foreman global parameter using Foreman API v2
 options:
   name:
-    description: Setting name
+    description: Global parameter name
     required: true
   value:
-    description: setting value
-    required: false
+    description: parameter value
+    required: true
   foreman_host:
     description: Hostname or IP address of Foreman system
     required: false
@@ -50,14 +50,15 @@ options:
 notes:
 - Requires the python-foreman package to be installed. See https://github.com/Nosmoht/python-foreman.
 version_added: "2.0"
-author: "Guido Günther <agx@sigxcpu.org>"
+author: "Radim Janca <janca@cesnet.cz>"
 '''
 
 EXAMPLES = '''
-- name: Ensure Setting
-  foreman_setting:
-    name: outofsync_interval
-    value: 10
+- name: Ensure Global parameter
+  foreman_global_parameter:
+    name: baud
+    value: 115200
+    state: present
     foreman_host: foreman.example.com
     foreman_port: 443
     foreman_user: admin
@@ -70,24 +71,13 @@ try:
 except ImportError:
     foremanclient_found = False
 
-
-def update_setting(setting, data):
-    try:
-        setting = theforeman.update_setting(id=setting['id'], data=data)
-    except ForemanError as e:
-        module.fail_json(msg='Could not update setting: {0}'.format(e.message))
-    return setting
-
-
-def fake_setting(setting, data):
-    setting['value'] = data['value']
-
-
 def ensure(module):
     global theforeman
 
     name = module.params['name']
     value = module.params['value']
+    state = module.params['state']
+    global_parameter = None
 
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
@@ -102,27 +92,40 @@ def ensure(module):
                          ssl=foreman_ssl)
 
     data = {'name': name}
+
     try:
-        setting = theforeman.search_setting(data=data)
+        global_parameter = theforeman.search_common_parameter(data=data)
     except ForemanError as e:
-        module.fail_json(msg='Could not get setting: {0}'.format(e.message))
+        module.fail_json(msg='Could not get global parameter: {0}'.format(e.message))
 
-    if not setting:
-        module.fail_json(msg='Setting %s does not exist' % name)
+    data['value'] = value
 
-    if isinstance(setting['value'], (bool, str, int)):
-        data['value'] = type(setting['value'])(value)
-    else:
-        data['value'] = value
-
-    if data['value'] != setting['value']:
-        if module.check_mode:
-            setting = fake_setting(setting, data)
+    if state == 'present':
+        if not global_parameter:
+            try:
+                global_parameter = theforeman.create_common_parameter(data=data)
+                return True, global_parameter
+            except ForemanError as e:
+                module.fail_json(msg='Could not create global parameter: {0}'.format(e.message))
         else:
-            setting = update_setting(setting, data)
-        return True, setting
-    return False, setting
+            if data['value'] != global_parameter['value']:
+                try:
+                    global_parameter = theforeman.update_resource(resource_type='common_parameters',
+                                                                  resource_id=global_parameter['id'],
+                                                                  data=data)
+                    return True, global_parameter
+                except ForemanError as e:
+                    module.fail_json(msg='Could not update global parameter: {0}'.format(e.message))
 
+    if state == 'absent':
+        if global_parameter:
+            try:
+                global_parameter = theforeman.delete_common_parameter(id=global_parameter['id'])
+                return True, global_parameter
+            except ForemanError as e:
+                module.fail_json(msg='Could not remove global parameter: {0}'.format(e.message))
+
+    return False, global_parameter
 
 def main():
     global module
@@ -131,20 +134,20 @@ def main():
         argument_spec=dict(
             name=dict(type='str', required=True),
             value=dict(type='str', required=True),
+            state=dict(type='str', default='present', choices=['present', 'absent']),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),
             foreman_user=dict(type='str', required=True),
             foreman_pass=dict(type='str', required=True, no_log=True),
             foreman_ssl=dict(type='bool', default=True)
         ),
-        supports_check_mode=True,
     )
 
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
-    changed, setting = ensure(module)
-    module.exit_json(changed=changed, setting=setting)
+    changed, global_parameter = ensure(module)
+    module.exit_json(changed=changed, global_parameter=global_parameter)
 
 # import module snippets
 from ansible.module_utils.basic import *

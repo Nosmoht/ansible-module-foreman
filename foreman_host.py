@@ -114,6 +114,9 @@ options:
     default: None
   puppet_ca_proxy:
     description: The puppet ca smart proxy, the host should be assigned to
+    default: None   
+  realm:
+    description: realm
     required: false
     default: None
   root_pass:
@@ -137,6 +140,15 @@ options:
   compute_attributes:
     description: compute attributes (can contain nested volume_attributes)
     required: false
+    default: None
+  content_source:
+    description: content source (smart proxy or capsule)
+    default: None
+  content_view:
+    description: content view (also requires lifecycle environment)
+    default: None
+  lifecycle_environment:
+    description: lifecycle environment (also requires content view)
     default: None
   interfaces_attributes:
     description: interface attributes (can contain nested compute_attributes)
@@ -234,10 +246,14 @@ def ensure():
     puppet_ca_proxy_name = module.params['puppet_ca_proxy']
     state = module.params['state']
     subnet_name = module.params[SUBNET]
+    realm_name = module.params['realm']
     interfaces_attributes = module.params['interfaces_attributes']
     owner_user_name = module.params['owner_user_name']
     owner_usergroup_name = module.params['owner_usergroup_name']
     compute_attributes = module.params['compute_attributes'] 
+    content_source_name = module.params['content_source']
+    content_view_name = module.params['content_view']
+    lifecycle_environment_name = module.params['lifecycle_environment']
     interfaces_attributes = module.params['interfaces_attributes'] 
 
     foreman_host = module.params['foreman_host']
@@ -418,6 +434,40 @@ def ensure():
                               resource_func=theforeman.search_subnet,
                               resource_name=subnet_name)
         data['subnet_id'] = subnet.get('id')
+
+    # Realm
+    if realm_name:
+        realm = get_resource(resource_type=REALM,
+                              resource_func=theforeman.search_realm,
+                              resource_name=realm_name)
+        data['realm_id'] = realm.get('id')
+
+    # Content source
+    if content_source_name:
+        content_source = get_resource(resource_type=SMART_PROXY,
+                              resource_func=theforeman.search_smart_proxy,
+                              resource_name=content_source_name)
+        data['content_source_id'] = content_source.get('id')
+
+    # Content view
+    if content_view_name:
+        if 'content_facet_attributes' not in data:
+            data['content_facet_attributes'] = {}
+
+        resource_type = "../../katello/api/organizations/{0}/content_views".format(organization.get('id'))
+        search = {'name': content_view_name}
+        content_view = theforeman.search_resource(resource_type=resource_type, data=search)
+        data['content_facet_attributes']['content_view_id'] = content_view.get('id')
+
+    # Lifecycle environment
+    if lifecycle_environment_name:
+        if 'content_facet_attributes' not in data:
+            data['content_facet_attributes'] = {}
+
+        resource_type = "../../katello/api/organizations/{0}/environments".format(organization.get('id'))
+        search = {'name': lifecycle_environment_name}
+        lifecycle_environment = theforeman.search_resource(resource_type=resource_type, data=search)
+        data['content_facet_attributes']['lifecycle_environment_id'] = lifecycle_environment.get('id')
 
     # Owner
     if owner_user_name:
@@ -666,10 +716,14 @@ def main():
             state=dict(type='str', default='present',
                        choices=['present', 'absent', 'running', 'stopped', 'rebooted']),
             subnet=dict(type='str', default=None),
+            realm=dict(type='str', default=None),
             interfaces_attributes=dict(type='list', required=False),
             owner_user_name=dict(type='str', default=None),
             owner_usergroup_name=dict(type='str', default=None),
             compute_attributes=dict(type='dict', required=False),
+            content_source=dict(type='str', required=False),
+            content_view=dict(type='str', required=False),
+            lifecycle_environment=dict(type='str', required=False),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),
             foreman_user=dict(type='str', required=True),

@@ -253,7 +253,6 @@ def ensure():
 
         if not templates_equal(data, config_template, compareable_keys):
             try:
-                del data['template_kind_id']
                 config_template = theforeman.update_config_template(id=config_template.get('id'), data=data)
                 return True, config_template
             except ForemanError as e:

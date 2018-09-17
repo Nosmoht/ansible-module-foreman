@@ -54,6 +54,10 @@ options:
     description: Partition table name
     required: False
     default: None
+  pxe_loader:
+    description: PXE Loader
+    required: False
+    default: None
   realm:
     description: Realm name
     required: false
@@ -186,6 +190,7 @@ def ensure(module):
     medium_name = module.params[MEDIUM]
     operatingsystem_name = module.params[OPERATINGSYSTEM]
     partition_table_name = module.params['partition_table']
+    pxe_loader = module.params['pxe_loader']
     realm_name = module.params['realm']
     root_pass = module.params['root_pass']
     smart_proxy_name = module.params[SMART_PROXY]
@@ -267,6 +272,10 @@ def ensure(module):
                                        resource_func=theforeman.search_partition_table,
                                        resource_name=partition_table_name)
         data['ptable_id'] = str(partition_table.get('id'))
+
+    # PXE loader
+    if pxe_loader:
+        data['pxe_loader'] = pxe_loader
 
     # Realm
     if realm_name:
@@ -398,6 +407,7 @@ def main():
             operatingsystem=dict(type='str', default=None),
             parameters=dict(type='list', default=None),
             partition_table=dict(type='str', default=None),
+            pxe_loader=dict(type='str', default=None),
             realm=dict(type='str', default=None),
             root_pass=dict(type='str', default=None, no_log=True),
             smart_proxy=dict(type='str', default=None),

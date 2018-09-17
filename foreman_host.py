@@ -108,6 +108,10 @@ options:
     description: Which Partition table should be used, if build is set true
     required: false
     default: None
+  pxe_loader:
+    description: PXE Loader
+    required: False
+    default: None
   puppet_proxy:
     description: The puppet smart proxy, the host should be assigned to
     required: false
@@ -241,6 +245,7 @@ def ensure():
     interfaces = module.params['interfaces']
     provision_method = module.params['provision_method']
     ptable_name = module.params[PARTITION_TABLE]
+    pxe_loader = module.params['pxe_loader']
     root_pass = module.params['root_pass']
     puppet_proxy_name = module.params['puppet_proxy']
     puppet_ca_proxy_name = module.params['puppet_ca_proxy']
@@ -407,6 +412,9 @@ def ensure():
        #return True, ptable
        data['ptable_id'] = ptable.get('id')
 
+    # PXE loader
+    if pxe_loader:
+        data['pxe_loader'] = pxe_loader
 
     # Root password
     if root_pass:
@@ -708,6 +716,7 @@ def main():
             parameters=dict(type='list', default=None),
             interfaces=dict(type='list', default=None),
             ptable=dict(type='str', default=None),
+            pxe_loader=dict(type='str', default=None),
             provision_method=dict(type='str', required=False,
                                   choices=['build', 'image']),
             root_pass=dict(type='str', default=None),

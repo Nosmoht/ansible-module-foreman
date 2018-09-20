@@ -177,6 +177,7 @@ notes:
 version_added: "2.0"
 author: "Thomas Krahn (@nosmoht)"
 '''
+import copy
 
 try:
     from foreman.foreman import *
@@ -509,9 +510,12 @@ def ensure():
                     msg='Could not delete host: {0}'.format(e.message))
 
         cmp_host = filter_host(host)
-        if not all(data.get(key, None) == cmp_host.get(key, None) for key in data.keys() + cmp_host.keys()):
+        updatable_data = copy.copy(data)
+        updatable_data.pop('compute_attributes')
+        updatable_data.pop('interfaces_attributes')
+        if any(updatable_data.get(key, None) != cmp_host.get(key, None) for key in updatable_data.keys()):
             try:
-                host = theforeman.update_host(id=host.get('id'), data={'host': data})
+                host = theforeman.update_host(id=host.get('id'), data={'host': updatable_data})
                 changed = True
             except ForemanError as e:
                 module.fail_json(msg='Could not update host: {0}'.format(e.message))

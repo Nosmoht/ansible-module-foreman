@@ -42,7 +42,7 @@ options:
     required: false
   locations:
     description: List of locations the domain should be assigned to
-    required: false  
+    required: false
   foreman_host:
     description: Hostname or IP address of Foreman system
     required: false
@@ -93,8 +93,26 @@ except ImportError:
 else:
     foremanclient_found = True
 
+try:
+    from ansible.module_utils.foreman_utils import *
 
-def get_resources(resource_type, resource_specs):
+    has_import_error = False
+except ImportError as e:
+    has_import_error = True
+    import_error_msg = str(e)
+
+
+def domains_equal(data, domain, comparable_keys):
+    if not all(data.get(key, None) == domain.get(key, None) for key in comparable_keys):
+        return False
+    if not organizations_equal(data, domain):
+        return False
+    if not locations_equal(data, domain):
+        return False
+    return True
+
+
+def get_resources(resource_type, resource_specs, theforeman):
     result = []
     for item in resource_specs:
         search_data = dict()
@@ -116,34 +134,9 @@ def get_resources(resource_type, resource_specs):
                 resource_type=resource_type, spec=item, error=e.message))
     return result
 
-def get_organization_ids(module, theforeman, organizations):
-    result = []
-    for i in range(0, len(organizations)):
-        try:
-            organization = theforeman.search_organization(data={'name': organizations[i]})
-            if not organization:
-                module.fail_json('Could not find Organization {0}'.format(organizations[i]))
-            result.append(organization.get('id'))
-        except ForemanError as e:
-            module.fail_json('Could not get Organizations: {0}'.format(e.message))
-    return result
-
-
-def get_location_ids(module, theforeman, locations):
-    result = []
-    for i in range(0, len(locations)):
-        try:
-            location = theforeman.search_location(data={'name':locations[i]})
-            if not location:
-                module.fail_json('Could not find Location {0}'.format(locations[i]))
-            result.append(location.get('id'))
-        except ForemanError as e:
-            module.fail_json('Could not get Locations: {0}'.format(e.message))
-    return result
 
 def ensure(module):
-    global theforeman
-
+    comparable_keys = ['name', 'fullname']
     name = module.params['name']
     fullname = module.params['fullname']
     state = module.params['state']
@@ -151,35 +144,27 @@ def ensure(module):
     organizations = module.params['organizations']
     locations = module.params['locations']
 
-    foreman_host = module.params['foreman_host']
-    foreman_port = module.params['foreman_port']
-    foreman_user = module.params['foreman_user']
-    foreman_pass = module.params['foreman_pass']
-    foreman_ssl = module.params['foreman_ssl']
-
-    theforeman = Foreman(hostname=foreman_host,
-                         port=foreman_port,
-                         username=foreman_user,
-                         password=foreman_pass,
-                         ssl=foreman_ssl)
+    theforeman = init_foreman_client(module)
 
     data = {'name': name}
 
     try:
         domain = theforeman.search_domain(data=data)
+        if domain:
+            domain = theforeman.get_domain(id=domain.get('id'))
     except ForemanError as e:
         module.fail_json(msg='Could not get domain: {0}'.format(e.message))
 
     if organizations:
-         data['organization_ids'] = get_organization_ids(module, theforeman, organizations)
+        data['organization_ids'] = get_organization_ids(module, theforeman, organizations)
 
     if locations:
-         data['location_ids'] = get_location_ids(module, theforeman, locations)
-
+        data['location_ids'] = get_location_ids(module, theforeman, locations)
 
     data['fullname'] = fullname
     if dns_proxy:
-        data['dns_id'] = get_resources(resource_type='smart_proxies', resource_specs=[dns_proxy])[0].get('id')
+        data['dns_id'] = get_resources(resource_type='smart_proxies', resource_specs=[dns_proxy],
+                                       theforeman=theforeman)[0].get('id')
 
     if not domain and state == 'present':
         try:
@@ -196,7 +181,7 @@ def ensure(module):
             except ForemanError as e:
                 module.fail_json(msg='Could not delete domain: {0}'.format(e.message))
 
-        if not all(data[key] == domain[key] for key in data):
+        if not domains_equal(data, domain, comparable_keys):
             try:
                 domain = theforeman.update_domain(id=domain.get('id'), data=data)
                 return True, domain

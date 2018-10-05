@@ -154,8 +154,36 @@ except ImportError:
 else:
     foremanclient_found = True
 
+try:
+    from ansible.module_utils.foreman_utils import *
 
-def get_resources(resource_type, resource_specs):
+    has_import_error = False
+except ImportError as e:
+    has_import_error = True
+    import_error_msg = str(e)
+
+
+def domains_equal(data, subnet):
+    data_domains = list(map(lambda d: d['name'], data['domains'])).sort()
+    subnet_domains = list(map(lambda d: d['name'], subnet['domains'])).sort()
+    if data_domains != subnet_domains:
+        return False
+    return True
+
+
+def subnets_equal(data, subnet, comparable_keys):
+    if not all(data.get(key, None) == subnet.get(key, None) for key in comparable_keys):
+        return False
+    if not domains_equal(data, subnet):
+        return False
+    if not organizations_equal(data, subnet):
+        return False
+    if not locations_equal(data, subnet):
+        return False
+    return True
+
+
+def get_resources(resource_type, resource_specs, theforeman):
     result = []
     for item in resource_specs:
         search_data = dict()
@@ -176,67 +204,11 @@ def get_resources(resource_type, resource_specs):
             module.fail_json(msg='Could not search resource type {resource_type} defined as {spec}: {error}'.format(
                 resource_type=resource_type, spec=item, error=e.message))
     return result
-def get_organization_ids(module, theforeman, organizations):
-    result = []
-    for i in range(0, len(organizations)):
-        try:
-            organization = theforeman.search_organization(data={'name': organizations[i]})
-            if not organization:
-                module.fail_json('Could not find Organization {0}'.format(organizations[i]))
-            result.append(organization.get('id'))
-        except ForemanError as e:
-            module.fail_json('Could not get Organizations: {0}'.format(e.message))
-    return result
 
 
-def get_location_ids(module, theforeman, locations):
-    result = []
-    for i in range(0, len(locations)):
-        try:
-            location = theforeman.search_location(data={'name':locations[i]})
-            if not location:
-                module.fail_json('Could not find Location {0}'.format(locations[i]))
-            result.append(location.get('id'))
-        except ForemanError as e:
-            module.fail_json('Could not get Locations: {0}'.format(e.message))
-    return result
-
-def ensure(module):
-    global theforeman
-
-    name = module.params['name']
-    state = module.params['state']
-    locations = module.params['locations']
-    organizations = module.params['organizations']
-
-    foreman_host = module.params['foreman_host']
-    foreman_port = module.params['foreman_port']
-    foreman_user = module.params['foreman_user']
-    foreman_pass = module.params['foreman_pass']
-    foreman_ssl = module.params['foreman_ssl']
-
-    theforeman = Foreman(hostname=foreman_host,
-                         port=foreman_port,
-                         username=foreman_user,
-                         password=foreman_pass,
-                         ssl=foreman_ssl)
-
-    data = {'name': name}
-
-    try:
-        subnet = theforeman.search_subnet(data=data)
-    except ForemanError as e:
-        module.fail_json(msg='Could not get subnet: {0}'.format(e.message))
-
-    if organizations:
-         data['organization_ids'] = get_organization_ids(module, theforeman, organizations)
-
-    if locations:
-         data['location_ids'] = get_location_ids(module, theforeman, locations)    
-
-
-    for key in ['dns_primary', 'dns_secondary', 'gateway', 'ipam', 'boot_mode', 'mask', 'network', 'network_address',
-                'vlanid']:
+def prepare_data(data, module, theforeman):
+    for key in ['dns_primary', 'dns_secondary', 'gateway', 'ipam', 'boot_mode', 'mask', 'network',
+                'vlanid', 'domains']:
         if key in module.params:
             data[key] = module.params[key]
     if 'ip_from' in module.params:
@@ -244,13 +216,43 @@ def ensure(module):
     if 'ip_to' in module.params:
         data['to'] = module.params['ip_to']
     if 'domains' in module.params and module.params['domains']:
-        data['domains'] = get_resources(resource_type='domains', resource_specs=module.params['domains'])
+        data['domains'] = get_resources(resource_type='domains', resource_specs=module.params['domains'],
+                                        theforeman=theforeman)
     for proxy_type in ['dns', 'dhcp', 'tftp']:
         key = "{0}_proxy".format(proxy_type)
         if key in module.params and module.params[key]:
             id_key = "{0}_id".format(proxy_type)
-            data[id_key] = get_resources(resource_type='smart_proxies', resource_specs=[module.params[key]])[0].get(
-                'id')
+            data[id_key] = get_resources(resource_type='smart_proxies', resource_specs=[module.params[key]],
+                                         theforeman=theforeman)[0].get('id')
+    return data
+
+
+def ensure(module):
+    comparable_keys = ['name', 'dns_primary', 'dns_secondary', 'gateway', 'ipam', 'boot_mode', 'mask', 'network',
+                        'vlanid', 'from', 'to']
+    name = module.params['name']
+    state = module.params['state']
+    locations = module.params['locations']
+    organizations = module.params['organizations']
+
+    theforeman = init_foreman_client(module)
+
+    data = {'name': name}
+
+    try:
+        subnet = theforeman.search_subnet(data=data)
+        if subnet:
+            subnet = theforeman.get_subnet(id=subnet.get('id'))
+    except ForemanError as e:
+        module.fail_json(msg='Could not get subnet: {0}'.format(e.message))
+
+    if organizations:
+        data['organization_ids'] = get_organization_ids(module, theforeman, organizations)
+
+    if locations:
+        data['location_ids'] = get_location_ids(module, theforeman, locations)
+
+    data = prepare_data(data, module, theforeman)
 
     if not subnet and state == 'present':
         try:
@@ -267,7 +269,7 @@ def ensure(module):
             except ForemanError as e:
                 module.fail_json(msg='Could not delete subnet: {0}'.format(e.message))
 
-        if not all(data[key] == subnet.get(key) for key in data):
+        if not subnets_equal(data, subnet, comparable_keys):
             try:
                 subnet = theforeman.update_subnet(id=subnet.get('id'), data=data)
                 return True, subnet

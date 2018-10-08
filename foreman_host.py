@@ -649,7 +649,7 @@ def ensure():
                         theforeman.update_resource('hosts', host_id, iface, component='interfaces',
                                                    component_id=host_interfaces_by_ip[interface_ip]['id'])
                     except ForemanError as e:
-                        module.fail_json(msg='Could not create host interface {ip}: {error}'.format(
+                        module.fail_json(msg='Could not update host interface {ip}: {error}'.format(
                                          ip=interface_ip, error=e.message))
                     changed = True
 

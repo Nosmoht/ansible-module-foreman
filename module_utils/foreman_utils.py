@@ -57,7 +57,7 @@ def locations_equal(data, resource):
         if not ('locations' in resource):
             return False
         else:
-            organization_ids = dict_list_to_list(resource['locations'], 'id')
-            if set(data['organization_ids']) != set(organization_ids):
+            location_ids = dict_list_to_list(resource['locations'], 'id')
+            if set(data['location_ids']) != set(location_ids):
                 return False
     return True

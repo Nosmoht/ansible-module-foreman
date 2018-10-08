@@ -218,6 +218,17 @@ def filter_host(h):
     return filtered
 
 
+def resolve_subnet_names(interfaces, theforeman):
+    for iface in interfaces:
+        # get subnet id if subnet name specified
+        iface_subnet_name = iface.pop('subnet', None)
+        if iface_subnet_name:
+            iface_subnet = get_resource(resource_type=SUBNET,
+                                        resource_func=theforeman.search_subnet,
+                                        resource_name=iface_subnet_name)
+            iface['subnet_id'] = iface_subnet.get('id')
+
+
 def ensure():
     changed = False
     name = module.params['name']
@@ -255,7 +266,6 @@ def ensure():
     content_source_name = module.params['content_source']
     content_view_name = module.params['content_view']
     lifecycle_environment_name = module.params['lifecycle_environment']
-    interfaces_attributes = module.params['interfaces_attributes'] 
 
     foreman_host = module.params['foreman_host']
     foreman_port = module.params['foreman_port']
@@ -491,6 +501,7 @@ def ensure():
 
     # interface attributes
     if interfaces_attributes:
+        resolve_subnet_names(interfaces_attributes, theforeman)
         data['interfaces_attributes'] = interfaces_attributes
 
     if not host and state == 'present':
@@ -579,6 +590,7 @@ def ensure():
 
     # Network Interfaces
     if interfaces:
+        resolve_subnet_names(interfaces, theforeman)
         try:
             host_interfaces = theforeman.get_resource('hosts', host_id, component='interfaces').get('results') or []
         except ForemanError as e:
@@ -605,14 +617,6 @@ def ensure():
         # Create/update interfaces
         for iface in interfaces:
             interface_ip = iface.get('ip')
-
-            # get subnet id if subnet name specified
-            iface_subnet_name = iface.pop('subnet', None)
-            if iface_subnet_name:
-                iface_subnet = get_resource(resource_type=SUBNET,
-                                            resource_func=theforeman.search_subnet,
-                                            resource_name=iface_subnet_name)
-                iface['subnet_id'] = iface_subnet.get('id')
 
             if not has_primary:
                 # No interface marked as primary.

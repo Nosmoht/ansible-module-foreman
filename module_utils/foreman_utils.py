@@ -2,9 +2,17 @@
 # (c) Radim Janča (Cesnet) 2018
 
 try:
-    from foreman.foreman import ForemanError
+    from foreman.foreman import *
 except ImportError:
     module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
+
+
+def init_foreman_client(module):
+    return Foreman(hostname=module.params['foreman_host'],
+                   port=module.params['foreman_port'],
+                   username=module.params['foreman_user'],
+                   password=module.params['foreman_pass'],
+                   ssl=module.params['foreman_ssl'])
 
 
 def dict_list_to_list(alist, key):

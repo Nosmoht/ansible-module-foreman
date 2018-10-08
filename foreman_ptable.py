@@ -35,6 +35,14 @@ options:
     description:
     - OS family
     required: false
+  organizations:
+    description:
+    - List of organization the ptable should be assigned to
+    required: false
+  locations:
+    description:
+    - List of locations the ptable should be assigned to
+    required: false
   state:
     description:
     - Partition Table state
@@ -88,12 +96,34 @@ except ImportError:
 else:
     foremanclient_found = True
 
+try:
+    from ansible.module_utils.foreman_utils import *
+
+    has_import_error = False
+except ImportError as e:
+    has_import_error = True
+    import_error_msg = str(e)
+
+def ptables_equal(data, ptable):
+    if not data['layout'] == ptable['layout']:
+        return False
+    if not data['os_family'] == ptable['os_family']:
+        return False
+    if not organizations_equal(data, ptable):
+        return False
+    if not locations_equal(data, ptable):
+        return False
+    return True
 
 def ensure():
     name = module.params['name']
     layout = module.params['layout']
     state = module.params['state']
     os_family = module.params['os_family']
+    organizations = module.params['organizations']
+    locations = module.params['locations']
+
+    theforeman = init_foreman_client(module)
 
     data = dict(name=name)
 
@@ -104,6 +134,10 @@ def ensure():
 
     data['layout'] = layout
     data['os_family'] = os_family
+    if organizations is not None:
+        data['organization_ids'] = get_organization_ids(module, theforeman, organizations)
+    if locations is not None:
+        data['location_ids'] = get_location_ids(module, theforeman, locations)
 
     if not ptable and state == 'present':
         try:
@@ -124,9 +158,7 @@ def ensure():
             ptable = theforeman.get_partition_table(id=ptable.get('id'))
         except ForemanError as e:
             module.fail_json(msg='Could not get partition table to update: {0}'.format(e.message))
-        if ptable.get('layout') == layout:
-            return False, ptable
-        else:
+        if not ptables_equal(data, ptable):
             try:
                 ptable = theforeman.update_partition_table(id=ptable.get('id'), data=data)
             except ForemanError as e:
@@ -145,6 +177,8 @@ def main():
             name=dict(type='str', required=True),
             layout=dict(type='str', required=False),
             os_family=dict(type='str', required=False),
+            organizations=dict(type='list', required=False),
+            locations=dict(type='list', required=False),
             state=dict(type='str', default='present', choices=['present', 'absent']),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),
@@ -156,18 +190,8 @@ def main():
 
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
-
-    foreman_host = module.params['foreman_host']
-    foreman_port = module.params['foreman_port']
-    foreman_user = module.params['foreman_user']
-    foreman_pass = module.params['foreman_pass']
-    foreman_ssl = module.params['foreman_ssl']
-
-    theforeman = Foreman(hostname=foreman_host,
-                         port=foreman_port,
-                         username=foreman_user,
-                         password=foreman_pass,
-                         ssl=foreman_ssl)
+    if has_import_error:
+        module.fail_json(msg=import_error_msg)
 
     changed, ptable = ensure()
     module.exit_json(changed=changed, ptable=ptable)

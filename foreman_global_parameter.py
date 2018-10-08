@@ -111,7 +111,7 @@ def ensure(module):
             if data['value'] != global_parameter['value']:
                 try:
                     global_parameter = theforeman.update_resource(resource_type='common_parameters',
-                                                                  resource_id=global_parameter['id'],
+                                                                  resource_id=global_parameter.get('id'),
                                                                   data=data)
                     return True, global_parameter
                 except ForemanError as e:
@@ -120,7 +120,7 @@ def ensure(module):
     if state == 'absent':
         if global_parameter:
             try:
-                global_parameter = theforeman.delete_common_parameter(id=global_parameter['id'])
+                global_parameter = theforeman.delete_common_parameter(id=global_parameter.get('id'))
                 return True, global_parameter
             except ForemanError as e:
                 module.fail_json(msg='Could not remove global parameter: {0}'.format(e.message))

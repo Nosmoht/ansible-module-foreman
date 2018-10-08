@@ -30,6 +30,61 @@ options:
   host:
     description: LDAP host to use
     required: True
+  port:
+    description: LDAP port
+    required: False
+    default: 389
+  tls:
+    description: use LDAPS
+    required: False
+    default: False),
+  base_dn:
+    description: Search base
+    required: False
+  account:
+    description: account for acces LDAP
+    required: False
+  account_password:
+    description: password for LDAP account
+    required: False
+  attr_login:
+    description: LDAP attribute used as login
+    required: False
+  attr_firstname:
+    description: LDAP attribute used as firstname
+    required: False
+  attr_lastname
+    description: LDAP attribute used as lastname
+    required: False
+  attr_mail:
+    description: LDAP attribute used as mail
+    required:False
+  attr_photo:
+    description: LDAP attribute used as photo
+    required:False
+  onthefly_register:
+    description: Autocreate users authenticated by LDAP in foreman
+    required:False
+  usergroup_sync:
+    description: Sync LDAP user groups automatically
+    required:False
+  groups_base:
+    description: Base DN for group search used by usergroup_sync
+    required:False
+  server_type:
+    description: LDAP server type, one of: posix, free_ipa, active_directory
+    required:False
+  ldap_filter:
+    description: LDAP users acceptance filter
+    required:False
+  organizations:
+    description:
+    - List of organization the LDAP should be assigned to
+    required: false
+  locations:
+    description:
+    - List of locations the LDAP should be assigned to
+    required: false
   state:
     description: Ldap state
     required: False
@@ -78,6 +133,14 @@ except ImportError:
 else:
     foremanclient_found = True
 
+try:
+    from ansible.module_utils.foreman_utils import *
+
+    has_import_error = False
+except ImportError as e:
+    has_import_error = True
+    import_error_msg = str(e)
+
 
 def get_user_ids(module, theforeman, users):
     result = []
@@ -92,37 +155,46 @@ def get_user_ids(module, theforeman, users):
     return result
 
 
+def ldaps_equal(data, ldap, cmp_keys):
+    for key in cmp_keys:
+        if (key in data) and (data.get(key) != ldap.get(key)):
+            return False
+    if not organizations_equal(data, ldap):
+        return False
+    if not locations_equal(data, ldap):
+        return False
+    return True
+
+
 def ensure(module):
     name = module.params['name']
     state = module.params['state']
+    organizations = module.params['organizations']
+    locations = module.params['locations']
 
-    foreman_host = module.params['foreman_host']
-    foreman_port = module.params['foreman_port']
-    foreman_user = module.params['foreman_user']
-    foreman_pass = module.params['foreman_pass']
-    foreman_ssl = module.params['foreman_ssl']
+    theforeman = init_foreman_client(module)
 
-    cmp_keys = ['host', 'port', 'base_dn', 'attr_login', 'attr_firstname',
+    cmp_keys = ['host', 'port', 'base_dn', 'account', 'attr_login', 'attr_firstname',
                 'attr_lastname', 'attr_mail', 'attr_photo', 'onthefly_register',
-                'usergroup_sync', 'ldap_filter']
-    keys = cmp_keys + ['groups_base', 'server_type']
-
-    theforeman = Foreman(hostname=foreman_host,
-                         port=foreman_port,
-                         username=foreman_user,
-                         password=foreman_pass,
-                         ssl=foreman_ssl)
+                'usergroup_sync', 'ldap_filter', 'tls', 'groups_base', 'server_type']
+    keys = cmp_keys + ['account_password']
 
     data = {'name': name}
 
     try:
         ldap = theforeman.search_auth_source_ldap(data=data)
+        if ldap:
+            ldap = theforeman.get_auth_source_ldap(id=ldap.get('id'))
     except ForemanError as e:
         module.fail_json(msg='Could not get ldap: {0}'.format(e.message))
 
     for key in keys:
         if module.params[key]:
             data[key] = module.params[key]
+    if organizations is not None:
+        data['organization_ids'] = get_organization_ids(module, theforeman, organizations)
+    if locations is not None:
+        data['location_ids'] = get_location_ids(module, theforeman, locations)
 
     if not ldap and state == 'present':
         try:
@@ -139,13 +211,12 @@ def ensure(module):
             except ForemanError as e:
                 module.fail_json('Could not delete ldap: {0}'.format(e.message))
 
-        if not all(data.get(key) == ldap.get(key) for key in cmp_keys):
+        if not ldaps_equal(data, ldap, cmp_keys):
             try:
                 ldap = theforeman.update_auth_source_ldap(id=ldap.get('id'), data=data)
                 return True, ldap
             except ForemanError as e:
                 module.fail_json(msg='Could not update hostgroup: {0}'.format(e.message))
-
     return False
 
 
@@ -156,7 +227,10 @@ def main():
             state=dict(type='str', default='present', choices=['present', 'absent']),
             host=dict(type='str', required=True),
             port=dict(type='int', required=False, default=389),
+            tls=dict(type='bool', required=False, default=False),
             base_dn=dict(type='str', required=False),
+            account=dict(type='str', required=False),
+            account_password=dict(type='str', required=False, no_log=True),
             attr_login=dict(type='str', required=False),
             attr_firstname=dict(type='str', required=False),
             attr_lastname=dict(type='str', required=False),
@@ -167,6 +241,8 @@ def main():
             groups_base=dict(type='str', required=False),
             server_type=dict(type='str', required=False, choices=['posix', 'free_ipa', 'active_directory']),
             ldap_filter=dict(type='str', required=False),
+            organizations=dict(type='list', required=False),
+            locations=dict(type='list', required=False),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),
             foreman_user=dict(type='str', required=True),
@@ -177,6 +253,8 @@ def main():
 
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
+    if has_import_error:
+        module.fail_json(msg=import_error_msg)
 
     changed = ensure(module)
     module.exit_json(changed=changed, name=module.params['name'])

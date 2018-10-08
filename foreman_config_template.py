@@ -189,17 +189,7 @@ def ensure():
     organizations = module.params['organizations']
     locations = module.params['locations']
 
-    foreman_host = module.params['foreman_host']
-    foreman_port = module.params['foreman_port']
-    foreman_user = module.params['foreman_user']
-    foreman_pass = module.params['foreman_pass']
-    foreman_ssl = module.params['foreman_ssl']
-
-    theforeman = Foreman(hostname=foreman_host,
-                         port=foreman_port,
-                         username=foreman_user,
-                         password=foreman_pass,
-                         ssl=foreman_ssl)
+    theforeman = init_foreman_client(module)
 
     data = dict(name=name)
 

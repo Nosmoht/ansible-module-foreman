@@ -62,6 +62,10 @@ options:
     description: root password
     required: false
     default: None
+  force_update:
+    description: forces update of hostgroup, usefull when in need of password update
+    required: false
+    default: false
   smart_proxy:
     description: Smart Proxy name
     required: False
@@ -75,6 +79,12 @@ options:
     required: false
     default: present
     choices: ["present", "absent"]
+  locations: List of locations the subnet should be assigned to
+    required: false
+    default: None
+  organizations: List of organizations the subnet should be assigned to
+    required: false
+    default: None
   foreman_host:
     description: Hostname or IP address of Foreman system
     required: false
@@ -121,6 +131,14 @@ except ImportError:
 else:
     foremanclient_found = True
 
+try:
+    from ansible.module_utils.foreman_utils import *
+
+    has_import_error = False
+except ImportError as e:
+    has_import_error = True
+    import_error_msg = str(e)
+
 
 def get_resource(module, resource_type, resource_func, resource_name, search_title=False):
     """
@@ -144,23 +162,6 @@ def get_resource(module, resource_type, resource_func, resource_name, search_tit
     return result
 
 
-def filter_hostgroup(hg):
-    """Filter all _name parameters since we only care about the IDs and convert
-    ids to strings since this is what we need to feed back to foreman
-
-    >>> filter_hostgroup({"a_name": "foo", "a_id": 1})
-    {'a_id': '1'}
-    """
-    filtered = {}
-    keep = ['title', 'name', 'root_pass']
-    for k, v in hg.items():
-        if k.endswith('_id') and v is not None:
-            filtered[k] = str(v)
-        elif k in keep:
-            filtered[k] = v
-    return filtered
-
-
 def split_parent(name):
     """
     Split hostgroup name in parent part and name:
@@ -169,47 +170,71 @@ def split_parent(name):
     ('c', 'a/b')
     """
     if '/' in name:
-        parent, name = name.rsplit('/',1)
+        parent, name = name.rsplit('/', 1)
     else:
         return name, None
     return name, parent
 
 
+def hostgroups_equal(data, hostgroup, comparable_keys):
+    if not all(str(data.get(key, None)) == str(hostgroup.get(key, None)) for key in comparable_keys):
+        return False
+    if not organizations_equal(data, hostgroup):
+        return False
+    if not locations_equal(data, hostgroup):
+        return False
+    return True
+
+
 def ensure(module):
     changed = False
+    comparable_keys = ['name', 'title', 'architecture_id', 'compute_profile_id', 'domain_id', 'environment_id', 'medium_id',
+                       'operatingsystem_id', 'ptable_id', 'realm_id', 'puppet_proxy_id', 'subnet_id', 'parent_id']
     full_name = module.params['name']
     short_name, parent_name = split_parent(full_name)
-    architecture_name = module.params[ARCHITECTURE]
-    compute_profile_name = module.params[COMPUTE_PROFILE]
-    domain_name = module.params[DOMAIN]
-    environment_name = module.params[ENVIRONMENT]
-    medium_name = module.params[MEDIUM]
-    operatingsystem_name = module.params[OPERATINGSYSTEM]
+    architecture_name = module.params['architecture']
+    compute_profile_name = module.params['compute_profile']
+    domain_name = module.params['domain']
+    environment_name = module.params['environment']
+    medium_name = module.params['medium']
+    operatingsystem_name = module.params['operatingsystem']
     partition_table_name = module.params['partition_table']
     realm_name = module.params['realm']
     root_pass = module.params['root_pass']
-    smart_proxy_name = module.params[SMART_PROXY]
-    subnet_name = module.params[SUBNET]
+    smart_proxy_name = module.params['smart_proxy']
+    subnet_name = module.params['subnet']
+    locations = module.params['locations']
+    organizations = module.params['organizations']
     state = module.params['state']
     parameters = module.params['parameters']
-    foreman_host = module.params['foreman_host']
-    foreman_port = module.params['foreman_port']
-    foreman_user = module.params['foreman_user']
-    foreman_pass = module.params['foreman_pass']
-    foreman_ssl = module.params['foreman_ssl']
+    force_update = module.params['force_update']
 
-    theforeman = Foreman(hostname=foreman_host,
-                         port=foreman_port,
-                         username=foreman_user,
-                         password=foreman_pass,
-                         ssl=foreman_ssl)
+    theforeman = init_foreman_client(module)
 
     data = {'title': full_name, 'name': short_name}
 
     try:
         hostgroup = theforeman.search_hostgroup(data=data)
+        if hostgroup:
+            hostgroup = theforeman.get_hostgroup(id=hostgroup.get('id'))
     except ForemanError as e:
         module.fail_json(msg='Could not get hostgroup: {0}'.format(e.message))
+
+    if state == 'absent':
+        if hostgroup:
+            try:
+                hostgroup = theforeman.delete_hostgroup(id=hostgroup.get('id'))
+                return True, hostgroup
+            except ForemanError as e:
+                module.fail_json(msg='Could not delete hostgroup: {0}'.format(e.message))
+        else:
+            return False, hostgroup
+
+    if organizations:
+        data['organization_ids'] = get_organization_ids(module, theforeman, organizations)
+
+    if locations:
+        data['location_ids'] = get_location_ids(module, theforeman, locations)
 
     # Architecture
     if architecture_name:
@@ -304,27 +329,19 @@ def ensure(module):
                               resource_name=parent_name)
         data['parent_id'] = str(parent.get('id'))
 
-    if not hostgroup and state == 'present':
+    # state == present
+    if not hostgroup:
         try:
             hostgroup = theforeman.create_hostgroup(data=data)
             changed = True
         except ForemanError as e:
             module.fail_json(msg='Could not create hostgroup: {0}'.format(e.message))
-    elif hostgroup:
-        if state == 'absent':
-            try:
-                hostgroup = theforeman.delete_hostgroup(id=hostgroup.get('id'))
-                return True, hostgroup
-            except ForemanError as e:
-                module.fail_json(msg='Could not delete hostgroup: {0}'.format(e.message))
-
-        cmp_hostgroup = filter_hostgroup(hostgroup)
-        if not all(data.get(key, None) == cmp_hostgroup.get(key, None) for key in data.keys() + cmp_hostgroup.keys()):
-            try:
-                hostgroup = theforeman.update_hostgroup(id=hostgroup.get('id'), data={'hostgroup': data})
-                changed = True
-            except ForemanError as e:
-                module.fail_json(msg='Could not update hostgroup: {0}'.format(e.message))
+    elif not hostgroups_equal(data, hostgroup, comparable_keys) or force_update:
+        try:
+            hostgroup = theforeman.update_hostgroup(id=hostgroup.get('id'), data=data)
+            changed = True
+        except ForemanError as e:
+            module.fail_json(msg='Could not update hostgroup: {0}'.format(e.message))
 
     hostgroup_id = hostgroup.get('id')
 
@@ -352,12 +369,10 @@ def ensure(module):
 
         # Create and update parameters
         for param in parameters:
-            hostgroup_params = [item for item in hostgroup_parameters if item.get(
-                'name') == param.get('name')]
+            hostgroup_params = [item for item in hostgroup_parameters if item.get('name') == param.get('name')]
             if not hostgroup_params:
                 try:
-                    theforeman.create_hostgroup_parameter(
-                        hostgroup_id=hostgroup_id, data=param)
+                    theforeman.create_hostgroup_parameter(hostgroup_id=hostgroup_id, data=param)
                 except ForemanError as e:
                     module.fail_json(
                         msg='Could not create host parameter {param_name}: {error}'.format(param_name=param.get('name'),
@@ -374,9 +389,8 @@ def ensure(module):
                     if hostgroup_value.replace('\n', '') != param_value.replace('\n', ''):
                         try:
                             theforeman.update_hostgroup_parameter(hostgroup_id=hostgroup_id,
-                                                             parameter_id=hostgroup_param.get(
-                                                                 'id'),
-                                                             data=param)
+                                                                  parameter_id=hostgroup_param.get('id'),
+                                                                  data=param)
                         except ForemanError as e:
                             module.fail_json(
                                 msg='Could not update host parameter {param_name}: {error}'.format(
@@ -400,9 +414,12 @@ def main():
             partition_table=dict(type='str', default=None),
             realm=dict(type='str', default=None),
             root_pass=dict(type='str', default=None, no_log=True),
+            force_update=dict(type='bool', default=False),
             smart_proxy=dict(type='str', default=None),
             subnet=dict(type='str', default=None),
             state=dict(type='str', default='present', choices=['present', 'absent']),
+            locations=dict(type='list', required=False),
+            organizations=dict(type='list', required=False),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),
             foreman_user=dict(type='str', required=True),

@@ -35,6 +35,11 @@ options:
     description:
     - OS family
     required: false
+  operatingsystems:
+    description:
+    - List of  Operating systems
+    required: False
+    default: None
   organizations:
     description:
     - List of organization the ptable should be assigned to
@@ -105,9 +110,11 @@ except ImportError as e:
     import_error_msg = str(e)
 
 def ptables_equal(data, ptable):
-    if not data['layout'] == ptable['layout']:
+    comparable_keys = set(data.keys()).intersection(set(
+        ['layout', 'os_family']))
+    if not all(data.get(key, None) == ptable.get(key, None) for key in comparable_keys):
         return False
-    if not data['os_family'] == ptable['os_family']:
+    if not operatingsystems_equal(data, ptable):
         return False
     if not organizations_equal(data, ptable):
         return False
@@ -120,6 +127,7 @@ def ensure():
     layout = module.params['layout']
     state = module.params['state']
     os_family = module.params['os_family']
+    operating_systems = module.params['operating_systems']
     organizations = module.params['organizations']
     locations = module.params['locations']
 
@@ -138,6 +146,8 @@ def ensure():
         data['organization_ids'] = get_organization_ids(module, theforeman, organizations)
     if locations is not None:
         data['location_ids'] = get_location_ids(module, theforeman, locations)
+    if operating_systems is not None:
+        data['operatingsystem_ids'] = get_operatingsystem_ids(module, theforeman, operating_systems)
 
     if not ptable and state == 'present':
         try:
@@ -177,6 +187,7 @@ def main():
             name=dict(type='str', required=True),
             layout=dict(type='str', required=False),
             os_family=dict(type='str', required=False),
+            operating_systems=dict(type='list', required=False),
             organizations=dict(type='list', required=False),
             locations=dict(type='list', required=False),
             state=dict(type='str', default='present', choices=['present', 'absent']),

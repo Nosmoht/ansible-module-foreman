@@ -530,8 +530,8 @@ def ensure():
 
         cmp_host = filter_host(host)
         updatable_data = copy.copy(data)
-        updatable_data.pop('compute_attributes')
-        updatable_data.pop('interfaces_attributes')
+        updatable_data.pop('compute_attributes', None)
+        updatable_data.pop('interfaces_attributes', None)
         if any(updatable_data.get(key, None) != cmp_host.get(key, None) for key in updatable_data.keys()):
             try:
                 host = theforeman.update_host(id=host.get('id'), data={'host': updatable_data})

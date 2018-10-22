@@ -253,7 +253,13 @@ def ensure():
 
         if not templates_equal(data, config_template, compareable_keys):
             try:
-                del data['template_kind_id']
+                if config_template['locked']:
+                    unlock = {'id': config_template.get('id'), 'locked': False}
+                    theforeman.update_config_template(id=config_template.get('id'), data=unlock)
+                if data['locked']:
+                    data['locked'] = False
+                    theforeman.update_config_template(id=config_template.get('id'), data=data)
+                    data['locked'] = True
                 config_template = theforeman.update_config_template(id=config_template.get('id'), data=data)
                 return True, config_template
             except ForemanError as e:

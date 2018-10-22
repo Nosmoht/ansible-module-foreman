@@ -38,6 +38,10 @@ options:
     description: OS minor version
     required: false
     default: None
+  family:
+    description: Family
+    required: false
+    default: None
   release_name:
     description: Release name
     required: false
@@ -98,30 +102,28 @@ try:
 except ImportError:
     foremanclient_found = False
 
+try:
+    from ansible.module_utils.foreman_utils import *
 
-def list_to_dict_list(alist, key):
-    result = []
-    if alist:
-        for item in alist:
-            result.append({key: item})
-    return result
-
-
-def dict_list_to_list(alist, key):
-    result = list()
-    if alist:
-        for item in alist:
-            result.append(item.get(key, None))
-    return result
+    has_import_error = False
+except ImportError as e:
+    has_import_error = True
+    import_error_msg = str(e)
 
 
-def equal_dict_lists(l1, l2, compare_key='name'):
-    s1 = set(dict_list_to_list(alist=l1, key=compare_key))
-    s2 = set(dict_list_to_list(alist=l2, key=compare_key))
-    return s1.issubset(s2) and s2.issubset(s1)
+def oses_equal(data, os, comparable_keys, comparable_arrays=[]):
+    if not all(data.get(key, None) == os.get(key, None) for key in comparable_keys):
+        return False
+    if not all(equal_dict_lists(l1=data.get(key, []), l2=os.get(key, [])) for key in comparable_arrays):
+        return False
+    if not organizations_equal(data, os):
+        return False
+    if not locations_equal(data, os):
+        return False
+    return True
 
 
-def get_resources(resource_type, resource_specs):
+def get_resources(resource_type, resource_specs, theforeman, module):
     result = []
     for item in resource_specs:
         search_data = dict()
@@ -144,14 +146,17 @@ def get_resources(resource_type, resource_specs):
     return result
 
 
-def ensure():
+def ensure(module):
     comparable_keys = ['description', 'family', 'major', 'minor', 'release_name']
+    comparable_arrays = ['architectures']
     name = module.params['name']
     state = module.params['state']
 
+    theforeman = init_foreman_client(module)
+
     data = dict(name=name)
     data['major'] = module.params['major']
-    if module.params['minor'] != None:
+    if module.params['minor']:
         data['minor'] = module.params['minor']
 
     try:
@@ -171,15 +176,19 @@ def ensure():
 
         return False, os
 
-    data['architectures'] = get_resources(resource_type='architectures', resource_specs=module.params['architectures'])
+    data['architectures'] = get_resources(resource_type='architectures', resource_specs=module.params['architectures'],
+                                          theforeman=theforeman, module=module)
     data['description'] = module.params['description']
     data['family'] = module.params['family']
     data['minor'] = module.params['minor']
     if module.params['media']:
-        data['media'] = get_resources(resource_type='media', resource_specs=module.params['media'])
-
+        data['media'] = get_resources(resource_type='media', resource_specs=module.params['media'],
+                                      theforeman=theforeman, module=module)
+        comparable_arrays.append('media')
     if module.params['ptables']:
-        data['ptables'] = get_resources(resource_type='ptables', resource_specs=module.params['ptables'])
+        data['ptables'] = get_resources(resource_type='ptables', resource_specs=module.params['ptables'],
+                                        theforeman=theforeman, module=module)
+        comparable_arrays.append('ptables')
     data['release_name'] = module.params['release_name']
 
     if not os:
@@ -189,10 +198,7 @@ def ensure():
         except ForemanError as e:
             module.fail_json(msg='Could not create operatingsystem: {0}'.format(e.message))
 
-    if (not all(data[key] == os.get(key, data[key]) for key in comparable_keys)) or (
-            not equal_dict_lists(l1=data.get('architectures', None), l2=os.get('architectures', None))) or (
-            not equal_dict_lists(l1=data.get('media', None), l2=os.get('media', None))) or (
-            not equal_dict_lists(l1=data.get('ptables', None), l2=os.get('ptables', None))):
+    if not oses_equal(data, os, comparable_keys, comparable_arrays):
         try:
             os = theforeman.update_operatingsystem(id=os.get('id'), data=data)
             return True, os
@@ -203,9 +209,6 @@ def ensure():
 
 
 def main():
-    global module
-    global theforeman
-
     module = AnsibleModule(
         argument_spec=dict(
             architectures=dict(type='list', required=False),
@@ -229,19 +232,7 @@ def main():
     if not foremanclient_found:
         module.fail_json(msg='python-foreman module is required. See https://github.com/Nosmoht/python-foreman.')
 
-    foreman_host = module.params['foreman_host']
-    foreman_port = module.params['foreman_port']
-    foreman_user = module.params['foreman_user']
-    foreman_pass = module.params['foreman_pass']
-    foreman_ssl = module.params['foreman_ssl']
-
-    theforeman = Foreman(hostname=foreman_host,
-                         port=foreman_port,
-                         username=foreman_user,
-                         password=foreman_pass,
-                         ssl=foreman_ssl)
-
-    changed, os = ensure()
+    changed, os = ensure(module)
     module.exit_json(changed=changed, operatingsystem=os)
 
 

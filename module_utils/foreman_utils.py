@@ -15,6 +15,12 @@ def init_foreman_client(module):
                    ssl=module.params['foreman_ssl'])
 
 
+def equal_dict_lists(l1, l2, compare_key='name'):
+    s1 = set(map(lambda x: x[compare_key], l1))
+    s2 = set(map(lambda x: x[compare_key], l2))
+    return s1 == s2
+
+
 def dict_list_to_list(alist, key):
     result = list()
     if alist:

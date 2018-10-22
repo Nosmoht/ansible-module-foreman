@@ -661,41 +661,42 @@ def ensure():
                                          ip=interface_ip, error=e.message))
                     changed = True
 
-    try:
-        host_power = theforeman.get_host_power(host_id=host_id)
-    except ForemanError as e:
-        # http://projects.theforeman.org/projects/foreman/wiki/ERF42-9958
-        if 'ERF42-9958' in e.message:
-            power_management_enabled = False
+    if state in ('rebooted','running','stopped'):
+        try:
+            host_power = theforeman.get_host_power(host_id=host_id)
+        except ForemanError as e:
+            # http://projects.theforeman.org/projects/foreman/wiki/ERF42-9958
+            if 'ERF42-9958' in e.message:
+                power_management_enabled = False
+            else:
+                module.fail_json(
+                    msg='Could not get host power information: {0}'.format(e.message))
         else:
-            module.fail_json(
-                msg='Could not get host power information: {0}'.format(e.message))
-    else:
-        power_management_enabled = True
-    if power_management_enabled:
-        host_power_state = host_power.get('power')
+            power_management_enabled = True
+        if power_management_enabled:
+            host_power_state = host_power.get('power')
 
-        if state == 'rebooted':
-            try:
-                theforeman.reboot_host(host_id=host_id)
-                changed = True
-            except ForemanError as e:
-                module.fail_json(
-                    msg='Could not reboot host: {0}'.format(e.message))
-        elif state == 'running' and host_power_state not in ['on', 'poweredOn']:
-            try:
-                theforeman.poweron_host(host_id=host_id)
-                changed = True
-            except ForemanError as e:
-                module.fail_json(
-                    msg='Could not power on host: {0}'.format(e.message))
-        elif state == 'stopped' and host_power_state not in ['off', 'poweredOff']:
-            try:
-                theforeman.poweroff_host(host_id=host_id)
-                changed = True
-            except ForemanError as e:
-                module.fail_json(
-                    msg='Could not power off host: {0}'.format(e.message))
+            if state == 'rebooted':
+                try:
+                    theforeman.reboot_host(host_id=host_id)
+                    changed = True
+                except ForemanError as e:
+                    module.fail_json(
+                        msg='Could not reboot host: {0}'.format(e.message))
+            elif state == 'running' and host_power_state not in ['on', 'poweredOn']:
+                try:
+                    theforeman.poweron_host(host_id=host_id)
+                    changed = True
+                except ForemanError as e:
+                    module.fail_json(
+                        msg='Could not power on host: {0}'.format(e.message))
+            elif state == 'stopped' and host_power_state not in ['off', 'poweredOff']:
+                try:
+                    theforeman.poweroff_host(host_id=host_id)
+                    changed = True
+                except ForemanError as e:
+                    module.fail_json(
+                        msg='Could not power off host: {0}'.format(e.message))
 
     return changed, host
 

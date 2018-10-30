@@ -118,7 +118,7 @@ options:
     default: None
   puppet_ca_proxy:
     description: The puppet ca smart proxy, the host should be assigned to
-    default: None   
+    default: None
   realm:
     description: realm
     required: false
@@ -267,7 +267,7 @@ def ensure():
     interfaces_attributes = module.params['interfaces_attributes']
     owner_user_name = module.params['owner_user_name']
     owner_usergroup_name = module.params['owner_usergroup_name']
-    compute_attributes = module.params['compute_attributes'] 
+    compute_attributes = module.params['compute_attributes']
     content_source_name = module.params['content_source']
     content_view_name = module.params['content_view']
     lifecycle_environment_name = module.params['lifecycle_environment']
@@ -415,7 +415,7 @@ def ensure():
     if provision_method:
         data['provision_method'] = provision_method
 
-    # Ptable 
+    # Ptable
     if ptable_name:
        ptable = get_resource(resource_type=PARTITION_TABLES,
                               resource_func=theforeman.search_partition_table,
@@ -512,7 +512,7 @@ def ensure():
         resolve_subnet_names(interfaces_attributes, theforeman)
         data['interfaces_attributes'] = interfaces_attributes
 
-    if not host and state == 'present':
+    if not host and state in ('present', 'running'):
         try:
             host = theforeman.create_host(data=data)
             changed = True

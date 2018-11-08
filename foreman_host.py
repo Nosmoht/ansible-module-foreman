@@ -181,7 +181,7 @@ notes:
 version_added: "2.0"
 author: "Thomas Krahn (@nosmoht)"
 '''
-import copy
+
 
 try:
     from foreman.foreman import *
@@ -189,6 +189,14 @@ except ImportError:
     foremanclient_found = False
 else:
     foremanclient_found = True
+
+try:
+    from ansible.module_utils.foreman_utils import *
+
+    has_import_error = False
+except ImportError as e:
+    has_import_error = True
+    import_error_msg = str(e)
 
 
 def get_resource(resource_type, resource_func, resource_name, search_title=False):
@@ -205,23 +213,6 @@ def get_resource(resource_type, resource_func, resource_name, search_title=False
     return result
 
 
-def filter_host(h):
-    """Filter all _name parameters since we only care about the IDs and convert
-    ids to strings since this is what we need to feed back to foreman
-
-    >>> filter_host({"a_name": "foo", "a_id": 1})
-    {'a_id': '1'}
-    """
-    filtered = {}
-    keep = ['title', 'name', 'root_pass']
-    for k, v in h.items():
-        if k.endswith('_id') and v is not None:
-            filtered[k] = str(v)
-        elif k in keep:
-            filtered[k] = v
-    return filtered
-
-
 def resolve_subnet_names(interfaces, theforeman):
     for iface in interfaces:
         # get subnet id if subnet name specified
@@ -233,36 +224,42 @@ def resolve_subnet_names(interfaces, theforeman):
             iface['subnet_id'] = iface_subnet.get('id')
 
 
+def hosts_equal(data, host):
+    # Match only keys defined in data
+    if not all(str(data.get(key, None)) == str(host.get(key, None)) for key in set(data.keys())):
+        return False
+    return True
+
+
 def ensure():
     changed = False
     name = module.params['name']
-    architecture_name = module.params[ARCHITECTURE]
+    architecture_name = module.params['architecture']
     build = module.params['build']
     ip = module.params['ip']
-    compute_profile_name = module.params[COMPUTE_PROFILE]
-    compute_resource_name = module.params[COMPUTE_RESOURCE]
-    domain_name = module.params[DOMAIN]
+    compute_profile_name = module.params['compute_profile']
+    compute_resource_name = module.params['compute_resource']
+    domain_name = module.params['domain']
     enabled = module.params['enabled']
-    environment_name = module.params[ENVIRONMENT]
-    hostgroup_name = module.params[HOSTGROUP]
+    environment_name = module.params['environment']
+    hostgroup_name = module.params['hostgroup']
     image_name = module.params['image']
-    ip = module.params['ip']
-    location_name = module.params[LOCATION]
+    location_name = module.params['location']
     mac = module.params['mac']
     managed = module.params['managed']
-    medium_name = module.params[MEDIUM]
-    operatingsystem_name = module.params[OPERATINGSYSTEM]
-    organization_name = module.params[ORGANIZATION]
+    medium_name = module.params['medium']
+    operatingsystem_name = module.params['operatingsystem']
+    organization_name = module.params['organization']
     parameters = module.params['parameters']
     interfaces = module.params['interfaces']
     provision_method = module.params['provision_method']
-    ptable_name = module.params[PARTITION_TABLE]
+    ptable_name = module.params['ptable']
     pxe_loader = module.params['pxe_loader']
     root_pass = module.params['root_pass']
     puppet_proxy_name = module.params['puppet_proxy']
     puppet_ca_proxy_name = module.params['puppet_ca_proxy']
     state = module.params['state']
-    subnet_name = module.params[SUBNET]
+    subnet_name = module.params['subnet']
     realm_name = module.params['realm']
     interfaces_attributes = module.params['interfaces_attributes']
     owner_user_name = module.params['owner_user_name']
@@ -272,17 +269,7 @@ def ensure():
     content_view_name = module.params['content_view']
     lifecycle_environment_name = module.params['lifecycle_environment']
 
-    foreman_host = module.params['foreman_host']
-    foreman_port = module.params['foreman_port']
-    foreman_user = module.params['foreman_user']
-    foreman_pass = module.params['foreman_pass']
-    foreman_ssl = module.params['foreman_ssl']
-
-    theforeman = Foreman(hostname=foreman_host,
-                         port=foreman_port,
-                         username=foreman_user,
-                         password=foreman_pass,
-                         ssl=foreman_ssl)
+    theforeman = init_foreman_client(module)
 
     if domain_name:
         if domain_name in name:
@@ -296,9 +283,21 @@ def ensure():
 
     try:
         host = theforeman.search_host(data=data)
+        if host:
+            host = theforeman.get_host(id=host.get('id'))
     except ForemanError as e:
         module.fail_json(
             msg='Error while searching host: {0}'.format(e.message))
+
+    if state == 'absent':
+        if host:
+            try:
+                host = theforeman.delete_host(id=host.get('id'))
+                return True, host
+            except ForemanError as e:
+                module.fail_json(msg='Could not delete host: {0}'.format(e.message))
+        else:
+            return False, host
 
     # Architecture
     if architecture_name:
@@ -334,8 +333,7 @@ def ensure():
             if not compute_resource_images:
                 module.fail_json(
                     msg='Compute Resource {0} has no images'.format(compute_resource_name))
-            images = filter(lambda x: x['name'] ==
-                                      image_name, compute_resource_images)
+            images = filter(lambda x: x['name'] == image_name, compute_resource_images)
             if len(images) == 0:
                 module.fail_json(
                     msg='Could not find image {image_name} in compute resource {compute_resource}'.format(
@@ -371,10 +369,6 @@ def ensure():
                                  resource_name=hostgroup_name,
                                  search_title=True)
         data['hostgroup_id'] = hostgroup.get('id')
-
-    # IP
-    if ip:
-        data['ip'] = ip
 
     # Location
     if location_name:
@@ -417,11 +411,10 @@ def ensure():
 
     # Ptable
     if ptable_name:
-       ptable = get_resource(resource_type=PARTITION_TABLES,
+        ptable = get_resource(resource_type=PARTITION_TABLES,
                               resource_func=theforeman.search_partition_table,
                               resource_name=ptable_name)
-       #return True, ptable
-       data['ptable_id'] = ptable.get('id')
+        data['ptable_id'] = ptable.get('id')
 
     # PXE loader
     if pxe_loader:
@@ -434,18 +427,16 @@ def ensure():
     # Puppet Smart Proxy
     if puppet_proxy_name:
         puppet_proxy = get_resource(resource_type=SMART_PROXY,
-                               resource_func=theforeman.search_smart_proxy,
-                               resource_name=puppet_proxy_name)
+                                    resource_func=theforeman.search_smart_proxy,
+                                    resource_name=puppet_proxy_name)
         data['puppet_proxy_id'] = str(puppet_proxy.get('id'))
 
     # Puppet CA Smart Proxy
     if puppet_ca_proxy_name:
         puppet_ca_proxy = get_resource(resource_type=SMART_PROXY,
-                               resource_func=theforeman.search_smart_proxy,
-                               resource_name=puppet_ca_proxy_name)
+                                       resource_func=theforeman.search_smart_proxy,
+                                       resource_name=puppet_ca_proxy_name)
         data['puppet_ca_proxy_id'] = str(puppet_ca_proxy.get('id'))
-
-
 
     # Subnet
     if subnet_name:
@@ -457,15 +448,15 @@ def ensure():
     # Realm
     if realm_name:
         realm = get_resource(resource_type=REALM,
-                              resource_func=theforeman.search_realm,
-                              resource_name=realm_name)
+                             resource_func=theforeman.search_realm,
+                             resource_name=realm_name)
         data['realm_id'] = realm.get('id')
 
     # Content source
     if content_source_name:
         content_source = get_resource(resource_type=SMART_PROXY,
-                              resource_func=theforeman.search_smart_proxy,
-                              resource_name=content_source_name)
+                                      resource_func=theforeman.search_smart_proxy,
+                                      resource_name=content_source_name)
         data['content_source_id'] = content_source.get('id')
 
     # Content view
@@ -491,15 +482,15 @@ def ensure():
     # Owner
     if owner_user_name:
         user = get_resource(resource_type=USER,
-                              resource_func=theforeman.search_user,
-                              resource_name=owner_user_name)
+                            resource_func=theforeman.search_user,
+                            resource_name=owner_user_name)
         data['owner_id'] = user.get('id')
         data['owner_type'] = 'User'
 
     if owner_usergroup_name:
         usergroup = get_resource(resource_type=USERGROUP,
-                              resource_func=theforeman.search_usergroup,
-                              resource_name=owner_usergroup_name)
+                                 resource_func=theforeman.search_usergroup,
+                                 resource_name=owner_usergroup_name)
         data['owner_id'] = usergroup.get('id')
         data['owner_type'] = 'Usergroup'
 
@@ -519,25 +510,12 @@ def ensure():
         except ForemanError as e:
             module.fail_json(
                 msg='Could not create host: {0}'.format(e.message))
-    elif host:
-        if state == 'absent':
-            try:
-                host = theforeman.delete_host(id=host.get('id'))
-                return True, host
-            except ForemanError as e:
-                module.fail_json(
-                    msg='Could not delete host: {0}'.format(e.message))
-
-        cmp_host = filter_host(host)
-        updatable_data = copy.copy(data)
-        updatable_data.pop('compute_attributes', None)
-        updatable_data.pop('interfaces_attributes', None)
-        if any(updatable_data.get(key, None) != cmp_host.get(key, None) for key in updatable_data.keys()):
-            try:
-                host = theforeman.update_host(id=host.get('id'), data={'host': updatable_data})
-                changed = True
-            except ForemanError as e:
-                module.fail_json(msg='Could not update host: {0}'.format(e.message))
+    elif host and not hosts_equal(data, host):
+        try:
+            host = theforeman.update_host(id=host.get('id'), data={'host': data})
+            changed = True
+        except ForemanError as e:
+            module.fail_json(msg='Could not update host: {0}'.format(e.message))
 
     host_id = host.get('id')
 
@@ -661,7 +639,7 @@ def ensure():
                                          ip=interface_ip, error=e.message))
                     changed = True
 
-    if state in ('rebooted','running','stopped'):
+    if state in ('rebooted', 'running', 'stopped'):
         try:
             host_power = theforeman.get_host_power(host_id=host_id)
         except ForemanError as e:
@@ -728,7 +706,7 @@ def main():
             pxe_loader=dict(type='str', default=None),
             provision_method=dict(type='str', required=False,
                                   choices=['build', 'image']),
-            root_pass=dict(type='str', default=None),
+            root_pass=dict(type='str', default=None, no_log=True),
             puppet_proxy=dict(type='str', default=None),
             puppet_ca_proxy=dict(type='str', default=None),
             state=dict(type='str', default='present',

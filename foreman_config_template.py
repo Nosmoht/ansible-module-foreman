@@ -36,7 +36,7 @@ options:
   locked:
     description: Whether or not the template is locked for editing
     required: false
-    default: false
+    default: None
   operatingsystems:
     description: List of Operatingsystem names the template is assigned to
     required: false
@@ -56,7 +56,7 @@ options:
   snippet:
     description: Define if template is a snippet or not
     required: false
-    default: false
+    default: None
   organizations:
     description:
     - List of organization the medium should be assigned to
@@ -132,16 +132,15 @@ except ImportError as e:
     import_error_msg = str(e)
 
 
-def equal_dict_lists(l1, l2, compare_key='title'):
-    s1 = set(dict_list_to_list(alist=l1, key=compare_key))
-    s2 = set(dict_list_to_list(alist=l2, key=compare_key))
-    return s1.issubset(s2) and s2.issubset(s1)
-
-
-def templates_equal(data, config_template, compareable_keys):
-    if not all(data.get(key, None) == config_template.get(key, None) for key in compareable_keys):
+def templates_equal(data, config_template):
+    comparable_keys = set(data.keys()).intersection(set(
+        ['locked', 'snippet', 'template', 'audit_comment', 'template_kind_id']))
+    comparable_arrays = set(data.keys()).intersection(set(['operatingsystems']))
+    if not all(data.get(key, None) == config_template.get(key, None) for key in comparable_keys):
         return False
-    if not equal_dict_lists(l1=data.get('operatingsystems', None), l2=config_template.get('operatingsystems', None)):
+    if not all(equal_dict_lists(l1=data.get(key, None),
+                                l2=config_template.get(key, None),
+                                compare_key='title') for key in comparable_arrays):
         return False
     if not organizations_equal(data, config_template):
         return False
@@ -177,7 +176,6 @@ def get_resources(resource_type, resource_func, resource_specs, search_field='na
 
 def ensure():
     audit_comment = module.params['audit_comment']
-    compareable_keys = ['locked', 'snippet', 'template']
     locked = module.params['locked']
     name = module.params['name']
     operatingsystems = module.params['operatingsystems']
@@ -209,13 +207,11 @@ def ensure():
                 module.fail_json(msg='Could not delete config template: {0}'.format(e.message))
 
     if state == 'present':
-        if not template and not template_file:
-            module.fail_json(msg='Either template or template_file must be defined')
-        elif template and template_file:
+        if template and template_file:
             module.fail_json(msg='Only one of either template or template_file must be defined')
-        elif template:
+        if template:
             data['template'] = template
-        else:
+        elif template_file:
             try:
                 with open(template_file) as f:
                     data['template'] = f.read()
@@ -223,8 +219,10 @@ def ensure():
                 module.fail_json(msg='Could not open file {0}: {1}'.format(template_file, e.message))
 
         data['audit_comment'] = audit_comment
-        data['locked'] = locked
-        data['snippet'] = snippet
+        if locked:
+            data['locked'] = locked
+        if snippet:
+            data['snippet'] = snippet
 
         if organizations is not None:
             data['organization_ids'] = get_organization_ids(module, theforeman, organizations)
@@ -251,12 +249,12 @@ def ensure():
             except ForemanError as e:
                 module.fail_json(msg='Could not create config template: {0}'.format(e.message))
 
-        if not templates_equal(data, config_template, compareable_keys):
+        if not templates_equal(data, config_template):
             try:
                 if config_template['locked']:
                     unlock = {'id': config_template.get('id'), 'locked': False}
                     theforeman.update_config_template(id=config_template.get('id'), data=unlock)
-                if data['locked']:
+                if data.get('locked', config_template['locked']):
                     data['locked'] = False
                     theforeman.update_config_template(id=config_template.get('id'), data=data)
                     data['locked'] = True
@@ -274,12 +272,12 @@ def main():
         argument_spec=dict(
             audit_comment=dict(type='str', required=False),
             name=dict(type='str', required=True),
-            locked=dict(type='bool', default=False),
+            locked=dict(type='bool', required=False),
             operatingsystems=dict(type='list', required=False),
             template=dict(type='str', required=False),
             template_file=dict(type='str', required=False),
             template_kind_name=dict(type='str', required=False),
-            snippet=dict(type='bool', default=False),
+            snippet=dict(type='bool', required=False),
             organizations=dict(type='list', required=False),
             locations=dict(type='list', required=False),
             state=dict(type='str', default='present', choices=['present', 'absent']),

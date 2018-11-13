@@ -118,7 +118,9 @@ except ImportError as e:
 
 
 def medium_equal(data, medium, module):
-    if medium['path'] != data['path'] or medium['os_family'] != data['os_family']:
+    comparable_keys = set(data.keys()).intersection(set(
+        ['path', 'os_family']))
+    if not all(data.get(key, None) == medium.get(key, None) for key in comparable_keys):
         return False
     if not organizations_equal(data, medium):
         return False
@@ -165,8 +167,10 @@ def ensure(module):
     except ForemanError as e:
         module.fail_json(msg='Could not get medium: {0}'.format(e.message))
 
-    data['path'] = path
-    data['os_family'] = os_family
+    if path:
+        data['path'] = path
+    if os_family:
+        data['os_family'] = os_family
     if organizations is not None:
         data['organization_ids'] = get_organization_ids(module, theforeman, organizations)
     if locations is not None:

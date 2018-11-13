@@ -180,7 +180,10 @@ def split_parent(name):
     return name, parent
 
 
-def hostgroups_equal(data, hostgroup, comparable_keys):
+def hostgroups_equal(data, hostgroup):
+    comparable_keys = set(data.keys()).intersection(set(
+        ['name', 'title', 'architecture_id', 'compute_profile_id', 'domain_id', 'environment_id', 'medium_id',
+         'operatingsystem_id', 'ptable_id', 'realm_id', 'puppet_proxy_id', 'subnet_id', 'parent_id']))
     if not all(str(data.get(key, None)) == str(hostgroup.get(key, None)) for key in comparable_keys):
         return False
     if not organizations_equal(data, hostgroup):
@@ -192,8 +195,6 @@ def hostgroups_equal(data, hostgroup, comparable_keys):
 
 def ensure(module):
     changed = False
-    comparable_keys = ['name', 'title', 'architecture_id', 'compute_profile_id', 'domain_id', 'environment_id', 'medium_id',
-                       'operatingsystem_id', 'ptable_id', 'realm_id', 'puppet_proxy_id', 'subnet_id', 'parent_id']
     full_name = module.params['name']
     short_name, parent_name = split_parent(full_name)
     architecture_name = module.params['architecture']
@@ -345,7 +346,7 @@ def ensure(module):
             changed = True
         except ForemanError as e:
             module.fail_json(msg='Could not create hostgroup: {0}'.format(e.message))
-    elif not hostgroups_equal(data, hostgroup, comparable_keys) or force_update:
+    elif not hostgroups_equal(data, hostgroup) or force_update:
         try:
             hostgroup = theforeman.update_hostgroup(id=hostgroup.get('id'), data=data)
             changed = True

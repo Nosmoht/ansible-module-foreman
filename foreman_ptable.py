@@ -140,8 +140,10 @@ def ensure():
     except ForemanError as e:
         module.fail_json(msg='Could not get partition table: {0}'.format(e.message))
 
-    data['layout'] = layout
-    data['os_family'] = os_family
+    if layout:
+        data['layout'] = layout
+    if os_family:
+        data['os_family'] = os_family
     if organizations is not None:
         data['organization_ids'] = get_organization_ids(module, theforeman, organizations)
     if locations is not None:

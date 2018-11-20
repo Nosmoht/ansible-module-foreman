@@ -29,11 +29,11 @@ def dict_list_to_list(alist, key):
     return result
 
 
-def get_resource_ids(resource_type, module, theforeman, resource_names):
+def get_resource_ids(resource_type, module, theforeman, resource_names, search_field='name'):
     result = []
     for i in range(0, len(resource_names)):
         try:
-            resource = theforeman.search_resource(resource_type=resource_type, data={'name': resource_names[i]})
+            resource = theforeman.search_resource(resource_type=resource_type, data={search_field: resource_names[i]})
             if not resource:
                 module.fail_json(msg='Could not find {type} {name}'.format(
                     type=resource_type,name=resource_names[i]))
@@ -48,7 +48,7 @@ def get_organization_ids(module, theforeman, organizations):
 def get_location_ids(module, theforeman, locations):
     return get_resource_ids(LOCATIONS, module, theforeman, locations)
 def get_operatingsystem_ids(module, theforeman, operating_systems):
-    return get_resource_ids(OPERATINGSYSTEMS, module, theforeman, operating_systems)
+    return get_resource_ids(OPERATINGSYSTEMS, module, theforeman, operating_systems, search_field='title')
 
 
 def organizations_equal(data, resource):

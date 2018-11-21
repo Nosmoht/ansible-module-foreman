@@ -35,6 +35,12 @@ options:
     description: Smart proxy URL
     required: false
     default: None
+  locations: List of locations the smart_proxy should be assigned to
+    required: false
+    default: None
+  organizations: List of organizations the smart_proxy should be assigned to
+    required: false
+    default: None
   foreman_host:
     description: Hostname or IP address of Foreman system
     required: false
@@ -66,32 +72,49 @@ try:
 except ImportError:
     foremanclient_found = False
 
+try:
+    from ansible.module_utils.foreman_utils import *
+
+    has_import_error = False
+except ImportError as e:
+    has_import_error = True
+    import_error_msg = str(e)
+
+
+def smart_proxies_equal(data, smart_proxy):
+    comparable_keys = set(data.keys()).intersection(set(['url']))
+    if not all(data.get(key, None) == smart_proxy.get(key, None) for key in comparable_keys):
+        return False
+    if not organizations_equal(data, smart_proxy):
+        return False
+    if not locations_equal(data, smart_proxy):
+        return False
+    return True
+
 
 def ensure(module):
-    updateable_keys = ['url']
-
     name = module.params['name']
     url = module.params['url']
     state = module.params['state']
+    organizations = module.params['organizations']
+    locations = module.params['locations']
 
-    foreman_host = module.params['foreman_host']
-    foreman_port = module.params['foreman_port']
-    foreman_user = module.params['foreman_user']
-    foreman_pass = module.params['foreman_pass']
-    foreman_ssl = module.params['foreman_ssl']
-
-    theforeman = Foreman(hostname=foreman_host,
-                         port=foreman_port,
-                         username=foreman_user,
-                         password=foreman_pass,
-                         ssl=foreman_ssl)
+    theforeman = init_foreman_client(module)
 
     data = {'name': name}
 
     try:
         smart_proxy = theforeman.search_smart_proxy(data=data)
+        if smart_proxy:
+            smart_proxy = theforeman.get_smart_proxy(id=smart_proxy.get('id'))
     except ForemanError as e:
         module.fail_json(msg='Could not get smart proxy: {0}'.format(e.message))
+
+    if organizations:
+        data['organization_ids'] = get_organization_ids(module, theforeman, organizations)
+
+    if locations:
+        data['location_ids'] = get_location_ids(module, theforeman, locations)
 
     data['url'] = url
 
@@ -107,10 +130,10 @@ def ensure(module):
             try:
                 smart_proxy = theforeman.delete_smart_proxy(id=smart_proxy.get('id'))
                 return True, smart_proxy
-            except:
+            except ForemanError as e:
                 module.fail_json(msg='Could not delete smart proxy: {0}'.format(e.message))
 
-        if not all(data[key] == smart_proxy[key] for key in updateable_keys):
+        if not smart_proxies_equal(data, smart_proxy):
             try:
                 smart_proxy = theforeman.update_smart_proxy(id=smart_proxy.get('id'), data=data)
                 return True, smart_proxy
@@ -125,6 +148,8 @@ def main():
             name=dict(type='str', required=True),
             url=dict(type='str', required=False),
             state=dict(type='str', default='present', choices=['present', 'absent']),
+            organizations=dict(type='list', required=False),
+            locations=dict(type='list', required=False),
             foreman_host=dict(type='str', default='127.0.0.1'),
             foreman_port=dict(type='str', default='443'),
             foreman_user=dict(type='str', required=True),

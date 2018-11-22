@@ -183,7 +183,7 @@ def split_parent(name):
 def hostgroups_equal(data, hostgroup):
     comparable_keys = set(data.keys()).intersection(set(
         ['name', 'title', 'architecture_id', 'compute_profile_id', 'domain_id', 'environment_id', 'medium_id',
-         'operatingsystem_id', 'ptable_id', 'realm_id', 'puppet_proxy_id', 'subnet_id', 'parent_id']))
+         'operatingsystem_id', 'ptable_id', 'realm_id', 'puppet_proxy_id', 'subnet_id', 'parent_id', 'pxe_loader']))
     if not all(str(data.get(key, None)) == str(hostgroup.get(key, None)) for key in comparable_keys):
         return False
     if not organizations_equal(data, hostgroup):

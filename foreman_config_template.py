@@ -135,12 +135,9 @@ except ImportError as e:
 def templates_equal(data, config_template):
     comparable_keys = set(data.keys()).intersection(set(
         ['locked', 'snippet', 'template', 'audit_comment', 'template_kind_id']))
-    comparable_arrays = set(data.keys()).intersection(set(['operatingsystems']))
     if not all(data.get(key, None) == config_template.get(key, None) for key in comparable_keys):
         return False
-    if not all(equal_dict_lists(l1=data.get(key, None),
-                                l2=config_template.get(key, None),
-                                compare_key='title') for key in comparable_arrays):
+    if not operatingsystems_equal(data, config_template):
         return False
     if not organizations_equal(data, config_template):
         return False
@@ -228,6 +225,8 @@ def ensure():
             data['organization_ids'] = get_organization_ids(module, theforeman, organizations)
         if locations is not None:
             data['location_ids'] = get_location_ids(module, theforeman, locations)
+        if operatingsystems is not None:
+            data['operatingsystem_ids'] = get_operatingsystem_ids(module, theforeman, operatingsystems)
 
         if template_kind_name:
             res = get_resources(resource_type='template_kinds',
@@ -236,7 +235,7 @@ def ensure():
             if res:
                 data['template_kind_id'] = res[0]["id"]
 
-        if not snippet:
+        if not snippet and operatingsystems is not None:
             data['operatingsystems'] = get_resources(resource_type='operatingsystem',
                                                      resource_func=theforeman.search_operatingsystem,
                                                      resource_specs=operatingsystems,

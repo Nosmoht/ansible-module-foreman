@@ -235,7 +235,7 @@ def ensure():
             if res:
                 data['template_kind_id'] = res[0]["id"]
 
-        if not snippet:
+        if not snippet and operatingsystems is not None:
             data['operatingsystems'] = get_resources(resource_type='operatingsystem',
                                                      resource_func=theforeman.search_operatingsystem,
                                                      resource_specs=operatingsystems,

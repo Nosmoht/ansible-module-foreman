@@ -76,6 +76,10 @@ options:
     description: DNS smart proxy to use for this subnet
     required: False
     default: None
+  discovery_proxy:
+    description: Discovery smart proxy to use for this subnet (requires foreman discover plugin)
+    required: False
+    default: None
   tftp_proxy:
     description: TFTP smart proxy to use for this subnet
     required: False
@@ -171,7 +175,9 @@ def domains_equal(data, subnet):
     return True
 
 
-def subnets_equal(data, subnet, comparable_keys):
+def subnets_equal(data, subnet):
+    comparable_keys = ['name', 'dns_primary', 'dns_secondary', 'gateway', 'ipam', 'boot_mode', 'mask', 'network',
+                       'vlanid', 'from', 'to', 'tftp_id', 'dns_id', 'dhcp_id', 'discovery_id']
     if not all(data.get(key, None) == subnet.get(key, None) for key in comparable_keys):
         return False
     if not domains_equal(data, subnet):
@@ -218,18 +224,19 @@ def prepare_data(data, module, theforeman):
     if 'domains' in module.params and module.params['domains']:
         data['domains'] = get_resources(resource_type='domains', resource_specs=module.params['domains'],
                                         theforeman=theforeman)
-    for proxy_type in ['dns', 'dhcp', 'tftp']:
+    for proxy_type in ['dns', 'dhcp', 'tftp', 'discovery']:
         key = "{0}_proxy".format(proxy_type)
-        if key in module.params and module.params[key]:
+        if key in module.params:
             id_key = "{0}_id".format(proxy_type)
-            data[id_key] = get_resources(resource_type='smart_proxies', resource_specs=[module.params[key]],
-                                         theforeman=theforeman)[0].get('id')
+            if module.params[key]:
+                data[id_key] = get_resources(resource_type='smart_proxies', resource_specs=[module.params[key]],
+                                             theforeman=theforeman)[0].get('id')
+            else:
+                data[id_key] = None
     return data
 
 
 def ensure(module):
-    comparable_keys = ['name', 'dns_primary', 'dns_secondary', 'gateway', 'ipam', 'boot_mode', 'mask', 'network',
-                        'vlanid', 'from', 'to']
     name = module.params['name']
     state = module.params['state']
     locations = module.params['locations']
@@ -269,7 +276,7 @@ def ensure(module):
             except ForemanError as e:
                 module.fail_json(msg='Could not delete subnet: {0}'.format(e.message))
 
-        if not subnets_equal(data, subnet, comparable_keys):
+        if not subnets_equal(data, subnet):
             try:
                 subnet = theforeman.update_subnet(id=subnet.get('id'), data=data)
                 return True, subnet
@@ -286,6 +293,7 @@ def main():
         argument_spec=dict(
             dhcp_proxy=dict(type='str', required=False),
             dns_proxy=dict(type='str', required=False),
+            discovery_proxy=dict(type='str', required=False),
             dns_primary=dict(type='str', required=False),
             dns_secondary=dict(type='str', required=False),
             domains=dict(type='list', required=False),

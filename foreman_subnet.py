@@ -54,7 +54,7 @@ options:
     description: Enable IP Address auto suggestion for this subnet
     required: False
     default: None
-    choices: ['DHCP', 'Internal DB', 'None']),
+    choices: ['DHCP', 'Internal DB', 'Random DB', 'None']),
   boot_mode:
     description: Default boot mode for interfaces assigned to this subnet
     required: False
@@ -293,7 +293,7 @@ def main():
             name=dict(type='str', required=True),
             network=dict(type='str', required=False),
             mask=dict(type='str', required=False),
-            ipam=dict(type='str', required=False, choices=['DHCP', 'Internal DB', 'None']),
+            ipam=dict(type='str', required=False, choices=['DHCP', 'Internal DB', 'Random DB', 'None']),
             boot_mode=dict(type='str', required=False, choices=['DHCP', 'Static'], default='DHCP'),
             ip_from=dict(type='str', required=False),
             ip_to=dict(type='str', required=False),

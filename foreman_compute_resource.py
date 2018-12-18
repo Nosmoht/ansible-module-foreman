@@ -256,7 +256,7 @@ def main():
             url=dict(type='str', required=False),
             user=dict(type='str', required=False),
             state=dict(type='str', default='present', choices=['present', 'absent']),
-            tenat=dict(type='str', required=False),
+            tenant=dict(type='str', required=False),
             locations=dict(type='list', required=False),
             organizations=dict(type='list', required=False),
             foreman_host=dict(type='str', default='127.0.0.1'),

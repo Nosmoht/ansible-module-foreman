@@ -59,6 +59,10 @@ options:
     description: Tenant name for Openstack
     required: false
     default: None
+  domain:
+    description: Domain name for Openstack (required for Keystone v3 API)
+    required: false
+    default: Default
   url:
     description: URL for Libvirt, Ovirt, and Openstack
     required: false
@@ -139,7 +143,7 @@ def get_provider_params(provider):
     elif provider_name == 'ovirt':
         return ['url', 'user', 'password']
     elif provider_name == 'openstack':
-        return ['url', 'user', 'password', 'tenant']
+        return ['url', 'user', 'password', 'tenant', 'domain']
     elif provider_name == 'vmware':
         return ['datacenter', 'user', 'password', 'server']
     else:
@@ -256,7 +260,8 @@ def main():
             url=dict(type='str', required=False),
             user=dict(type='str', required=False),
             state=dict(type='str', default='present', choices=['present', 'absent']),
-            tenant=dict(type='str', required=False),
+            tenat=dict(type='str', required=False),
+            domain=dict(type='str', required=False),
             locations=dict(type='list', required=False),
             organizations=dict(type='list', required=False),
             foreman_host=dict(type='str', default='127.0.0.1'),

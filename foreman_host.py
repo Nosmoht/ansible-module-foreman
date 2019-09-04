@@ -459,10 +459,12 @@ def ensure():
 
     # Content source
     if content_source_name:
+        if 'content_facet_attributes' not in data:
+            data['content_facet_attributes'] = {}
         content_source = get_resource(resource_type=SMART_PROXY,
                                       resource_func=theforeman.search_smart_proxy,
                                       resource_name=content_source_name)
-        data['content_source_id'] = content_source.get('id')
+        data['content_facet_attributes']['content_source_id'] = content_source.get('id')
 
     # Content view
     if content_view_name:

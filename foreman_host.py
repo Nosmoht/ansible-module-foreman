@@ -158,6 +158,10 @@ options:
     description: interface attributes (can contain nested compute_attributes)
     required: false
     default: None
+  kickstart_repository_id:
+    description: kickstart repo id for sycned content
+    required: false
+    default: None
   foreman_host:
     description: Hostname or IP address of Foreman system
     required: false
@@ -268,6 +272,7 @@ def ensure():
     content_source_name = module.params['content_source']
     content_view_name = module.params['content_view']
     lifecycle_environment_name = module.params['lifecycle_environment']
+    kickstart_repository_id = module.params['kickstart_repository_id']
 
     theforeman = init_foreman_client(module)
 
@@ -478,6 +483,13 @@ def ensure():
         search = {'name': lifecycle_environment_name}
         lifecycle_environment = theforeman.search_resource(resource_type=resource_type, data=search)
         data['content_facet_attributes']['lifecycle_environment_id'] = lifecycle_environment.get('id')
+
+    # Kickstart repository ID
+    if kickstart_repository_id:
+        if 'content_facet_attributes' not in data:
+            data['content_facet_attributes'] = {}
+
+        data['content_facet_attributes']['kickstart_repository_id'] = kickstart_repository_id
 
     # Owner
     if owner_user_name:
@@ -724,7 +736,8 @@ def main():
             foreman_port=dict(type='str', default='443'),
             foreman_user=dict(type='str', required=True),
             foreman_pass=dict(type='str', required=True, no_log=True),
-            foreman_ssl=dict(type='bool', default=True)
+            foreman_ssl=dict(type='bool', default=True),
+            kickstart_repository_id=dict(type='str', default=None, required=False)
         ),
     )
 

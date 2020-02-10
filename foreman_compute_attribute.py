@@ -101,7 +101,12 @@ def ensure(module):
                                                           compute_profile_id=compute_profile.get('id'))
 
     if compute_attributes:
-        compute_attribute = compute_attributes[0]
+        try:
+            # Python 2
+            compute_attribute = compute_attributes[0]
+        except TypeError:
+            # Python 3
+            compute_attribute = next(compute_attributes)
     else:
         compute_attribute = None
 
